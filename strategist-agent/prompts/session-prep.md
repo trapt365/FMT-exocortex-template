@@ -4,7 +4,7 @@
 
 - **HUB (личные планы):** ~/Github/DS-strategy/current/
 - **Документы стратегии:** ~/Github/DS-strategy/docs/ (ВСЕ файлы: Strategy.md, Dissatisfactions.md, Session Agenda.md)
-- **Inbox:** ~/Github/DS-strategy/inbox/ (исчезающие-заметки.md + свежие файлы)
+- **Inbox:** ~/Github/DS-strategy/inbox/ (fleeting-notes.md + свежие файлы)
 - **SPOKE (планы репо):** ~/Github/*/WORKPLAN.md
 - **Стратегические карты:** ~/Github/*/MAPSTRATEGIC.md (если есть в репо)
 - **MEMORY:** MEMORY.md (автозагрузка)
@@ -19,7 +19,7 @@ DS-strategy/
 │   └── DayPlan YYYY-MM-DD.md
 ├── archive/
 ├── docs/       # Strategy.md, Dissatisfactions.md, Session Agenda.md
-├── inbox/      # исчезающие-заметки.md + входящие
+├── inbox/      # fleeting-notes.md + входящие
 ```
 
 ## Предусловие
@@ -38,7 +38,7 @@ DS-strategy/
 
 #### 2. Обработать inbox (→ блок «Inbox»)
 
-- Прочитай `DS-strategy/inbox/исчезающие-заметки.md`
+- Прочитай `DS-strategy/inbox/fleeting-notes.md`
 - Прочитай ВСЕ файлы из inbox/
 - Для каждой заметки: → в план? → capture? → обсудить? → удалить?
 
