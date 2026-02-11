@@ -43,7 +43,7 @@
 | Компонент | Путь | Назначение |
 |-----------|------|-----------|
 | Runner | `DS-strategist/scripts/strategist.sh` | Запуск Claude CLI с промптом |
-| Промпты | `DS-strategist/prompts/*.md` | 8 сценариев (стратегия, дневной план, ревью…) |
+| Промпты | `DS-strategist/prompts/*.md` | 9 сценариев (session-prep, strategy-session, day-plan, day-close, week-review…) |
 | Расписание | `DS-strategist/scripts/launchd/*.plist` | LaunchAgent (утро + воскресенье) |
 | Установщик | `DS-strategist/install.sh` | Копирование plist + загрузка |
 
