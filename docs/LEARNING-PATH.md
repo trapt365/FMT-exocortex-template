@@ -530,7 +530,7 @@ Pack — формализованный паспорт предметной об
 - Failure Modes (типичные ошибки)
 - SOTA-аннотации (актуальность знания)
 
-**Живые примеры:** [PACK-digital-platform](https://github.com/TserenTserenov/PACK-digital-platform) (40+ сущностей), [PACK-MIM](https://github.com/TserenTserenov/PACK-MIM) (22 сущности)
+**Живой пример:** [PACK-digital-platform](https://github.com/TserenTserenov/PACK-digital-platform) (40+ сущностей)
 
 ### 6.2. Создание Pack (11 стадий SPF)
 

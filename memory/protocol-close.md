@@ -21,8 +21,8 @@
 
 ## Алгоритм Close
 
-0. **Pull** → `cd DS-my-strategy && git pull --rebase`
-1. **Knowledge Extraction** → прочитай и выполни `DS-IT-systems/DS-ai-systems/extractor/prompts/session-close.md`:
+0. **Pull** → `cd DS-strategy && git pull --rebase`
+1. **Knowledge Extraction** → прочитай и выполни `roles/extractor/prompts/session-close.md`:
    - Собрать отложенные captures + проверить пропущенные
    - Классифицировать → маршрутизировать → формализовать → валидировать
    - Показать Extraction Report → получить одобрение
@@ -30,16 +30,16 @@
 2. Обновить MEMORY.md (статус РП)
 3. Зафиксировать: что сделано, что осталось
 4. Закоммитить (с подтверждением)
-5. Обновить `DS-my-strategy/current/Plan W{N}...` (статусы РП)
-6. Синхронизировать backup: `memory/ + CLAUDE.md → DS-my-strategy/exocortex/`
+5. Обновить `DS-strategy/current/Plan W{N}...` (статусы РП)
+6. Синхронизировать backup: `memory/ + CLAUDE.md → DS-strategy/exocortex/`
 7. **WP Context File:**
-   - in_progress + ≥2 сессий → обновить `DS-my-strategy/inbox/WP-{N}-{slug}.md`
-   - done → обновить фронтматтер: `status: done`. **НЕ перемещать** в archive (обязанность R1 Стратег, Session-Prep)
+   - in_progress + ≥2 сессий → обновить `DS-strategy/inbox/WP-{N}-{slug}.md`
+   - done → `mv inbox/WP-{N}-*.md → archive/wp-contexts/` (сразу, не откладывая)
    - Проверка: РП есть в WeekPlan и MEMORY.md? Нет → добавить
 8. **Незавершённое и идеи:**
    - Недоделка по РП → context file (секция «Осталось»)
    - Идея развития системы → `<repo>/MAPSTRATEGIC.md`
-   - Новая задача → `DS-my-strategy/inbox/captures.md` или fleeting-notes.md
+   - Новая задача → `DS-strategy/inbox/captures.md` или fleeting-notes.md
 
 ---
 
@@ -72,13 +72,13 @@
 
 - [ ] Все изменения закоммичены и запушены
 - [ ] MEMORY.md обновлён (статусы РП)
-- [ ] DS-my-strategy/current/Plan обновлён
+- [ ] DS-strategy/current/Plan обновлён
 - [ ] Captures применены
 - [ ] **Selective Reindex:** Pack изменены? → `selective-reindex.sh`
 - [ ] **Repo CLAUDE.md:** feat-коммиты → новые правила для CLAUDE.md репо?
 - [ ] **WP context:** коммиты реализуют пункт WP-плана → пункт done?
-- [ ] Backup → DS-my-strategy/exocortex/ синхронизирован
-- [ ] Context file обновлён (inbox/) или архивирован
+- [ ] Backup → DS-strategy/exocortex/ синхронизирован
+- [ ] Context file: done → `mv inbox/WP-*.md → archive/wp-contexts/` (сразу при Close)
 - [ ] Отчёт Close сформирован
 - [ ] WP Context File создан/обновлён при ПЕРВОМ Close
 - [ ] Новое репо → MAPSTRATEGIC.md + Strategy.md

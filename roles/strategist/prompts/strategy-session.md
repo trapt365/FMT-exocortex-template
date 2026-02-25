@@ -1,6 +1,6 @@
 Выполни сценарий «Сессия стратегирования» для роли Стратег (R1).
 
-Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.AGENT.012-strategist/scenarios/scheduled/01-strategy-session.md
+> Source-of-truth: DP.AGENT.012-strategist (PACK-digital-platform). Алгоритм полностью описан ниже.
 
 ## Контекст
 

@@ -21,12 +21,10 @@
 
 | Репо | Путь |
 |------|------|
-| Монорепо ИИ-систем (7 шт.) | `DS-IT-systems/DS-ai-systems/` |
-| — Стратег (Grade 3) | `FMT-exocortex-template/roles/strategist/` |
-| — Шаблонизатор (Grade 0) | `DS-IT-systems/DS-ai-systems/setup/` |
-| — Наладчик (Grade 2) | `DS-IT-systems/DS-ai-systems/fixer/` |
-| — Статистик (Grade 1) | `DS-IT-systems/DS-ai-systems/pulse/` |
-| — Оценщик (Grade 2) | `DS-IT-systems/DS-ai-systems/evaluator/` |
+| Шаблон экзокортекса | `FMT-exocortex-template/` |
+| — Стратег (R1) | `FMT-exocortex-template/roles/strategist/` |
+| — Экстрактор (R2) | `FMT-exocortex-template/roles/extractor/` |
+| — Синхронизатор (R8) | `FMT-exocortex-template/roles/synchronizer/` |
 | Личная онтология | `DS-strategy/ontology.md` |
 | Программа обучения | `DS-principles-curriculum/` |
 

@@ -3,12 +3,12 @@
 > **Триггер:** Автоматический — Пн 00:00 (полночь Вс→Пн, launchd).
 > Создаёт WeekReport для клуба. Служит входом для session-prep (Пн 4:00).
 
-Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.AGENT.012-strategist/scenarios/scheduled/03-week-review.md
+> Source-of-truth: DP.AGENT.012-strategist (PACK-digital-platform). Алгоритм полностью описан ниже.
 
 ## Контекст
 
 - **WeekPlan:** {{WORKSPACE_DIR}}/DS-strategy/current/WeekPlan W*.md
-- **Шаблон:** {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.AGENT.012-strategist/templates/reviews/weekly-review.md
+- **Шаблон:** см. секцию «Шаблон WeekReport» ниже
 
 ### 0. WakaTime — время работы за неделю
 
@@ -58,15 +58,17 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 0
 1. Создай `current/WeekReport W{N} YYYY-MM-DD.md`
 2. Закоммить в DS-strategy
 
-### 6. Создать пост для клуба (авто-публикация)
+### 6. Создать пост для клуба (опционально)
 
-> Пост итогов недели публикуется автоматически в Пн 07:14 МСК. Стратег создаёт его сразу со `status: ready`.
+> Шаг выполняется только если у пользователя настроен Knowledge Index — surface downstream репо для публикаций.
+> Проверь: существует ли директория `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/`?
+> Если нет — пропусти шаг 6 полностью.
 
 1. Переключись на **роль Автора (R4)** и на основе WeekReport сформируй пост для клуба.
 
-   **Обязательно прочитай** `{{WORKSPACE_DIR}}/DS-Knowledge-Index-Tseren/CLAUDE.md` — полные инструкции роли Автора:
+   **Обязательно прочитай** `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/CLAUDE.md` — полные инструкции роли Автора:
    - § 2 — стандарт названий для итогов недели
-   - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели` (4 уровня влияния, голос от первого лица, 400-700 слов)
+   - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели`
 
    Стратег отвечает за **данные** (метрики, факты, сравнения). Автор отвечает за **подачу** (голос, структура, стиль).
 
@@ -76,11 +78,9 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 0
    - Carry-over → W{N+1} (из WeekReport, секция «Carry-over»)
    - Фокус следующей недели (из WeekReport, секция «Следующая неделя»)
 
-   Автор использует carry-over и фокус для финала поста — «идеи на следующую неделю».
-
    Выбери лучшее название сам (в автоматическом режиме нет пользователя для выбора).
 
-2. Создай файл `{{WORKSPACE_DIR}}/DS-Knowledge-Index-Tseren/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
+2. Создай файл `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
 
 3. Frontmatter:
 
@@ -98,8 +98,8 @@ content_plan: null
 ---
 ```
 
-4. Обнови `{{WORKSPACE_DIR}}/DS-Knowledge-Index-Tseren/docs/README.md` — добавь строку в начало текущего месяца
-5. Закоммить и запушь `DS-Knowledge-Index-Tseren` (git add docs/ && git commit && git push)
+4. Обнови `{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}/docs/README.md` — добавь строку в начало текущего месяца
+5. Закоммить и запушь Knowledge Index (git add docs/ && git commit && git push)
 
 **Шаблон WeekReport:**
 
@@ -144,4 +144,4 @@ agent: Стратег
 
 Результат:
 - WeekReport в `current/` — как вход для session-prep
-- Пост итогов в `DS-Knowledge-Index-Tseren/docs/{YYYY}/` со `status: ready` — авто-публикация Пн 07:14
+- (Опционально) Пост итогов в Knowledge Index со `status: ready`

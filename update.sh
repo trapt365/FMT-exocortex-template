@@ -107,7 +107,7 @@ if $STASHED; then
 fi
 
 # --- 4. Reinstall platform-space ---
-echo "[3/4] Reinstalling platform-space..."
+echo "[3/5] Reinstalling platform-space..."
 
 # Copy CLAUDE.md to workspace root
 if [ -f "$EXOCORTEX_DIR/CLAUDE.md" ]; then
@@ -129,8 +129,43 @@ if [ -d "$EXOCORTEX_DIR/memory" ] && [ -d "$CLAUDE_MEMORY_DIR" ]; then
     echo "  Skipped: memory/MEMORY.md (user data preserved)"
 fi
 
+# --- 5. Reinstall roles ---
+echo "[4/5] Reinstalling roles..."
+
+# Check which role files changed and reinstall if needed
+CHANGED_FILES=$(git diff --name-only "$LOCAL".."$UPSTREAM" 2>/dev/null || echo "")
+
+reinstall_role() {
+    local role_name="$1"
+    local install_script="$EXOCORTEX_DIR/roles/$role_name/install.sh"
+    if [ -f "$install_script" ]; then
+        echo "  Reinstalling $role_name..."
+        chmod +x "$install_script"
+        bash "$install_script" 2>&1 | sed 's/^/    /'
+    fi
+}
+
+# Reinstall roles whose files changed
+if echo "$CHANGED_FILES" | grep -q "^roles/strategist/"; then
+    reinstall_role "strategist"
+else
+    echo "  strategist: no changes"
+fi
+
+if echo "$CHANGED_FILES" | grep -q "^roles/extractor/"; then
+    reinstall_role "extractor"
+else
+    echo "  extractor: no changes"
+fi
+
+if echo "$CHANGED_FILES" | grep -q "^roles/synchronizer/"; then
+    reinstall_role "synchronizer"
+else
+    echo "  synchronizer: no changes"
+fi
+
 # --- Done ---
-echo "[4/4] Pushing merge commit..."
+echo "[5/5] Pushing merge commit..."
 git push 2>&1 | sed 's/^/  /'
 
 echo ""
@@ -139,4 +174,5 @@ echo "  Update Complete!"
 echo "=========================================="
 echo "  Merged $COMMITS_BEHIND commits from upstream"
 echo "  Platform-space reinstalled"
+echo "  Roles checked for reinstallation"
 echo ""

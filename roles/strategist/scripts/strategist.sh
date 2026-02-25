@@ -35,7 +35,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    "$HOME/Github/DS-IT-systems/DS-ai-systems/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
+    "{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh" strategist "$scenario" >> "$LOG_FILE" 2>&1 || true
 }
 
 fetch_wakatime_data() {
@@ -147,10 +147,12 @@ case "$1" in
     "week-review")
         log "Sunday: running week review"
         run_claude "week-review"
-        # Fallback push for Knowledge Index (week-review creates a post there)
-        KI_REPO="$HOME/Github/DS-Knowledge-Index-Tseren"
-        if git -C "$KI_REPO" log --oneline -1 --since="1 hour ago" --grep="week-review" 2>/dev/null | grep -q .; then
-            git -C "$KI_REPO" push >> "$LOG_FILE" 2>&1 && log "Pushed Knowledge Index (fallback)" || log "WARN: KI push failed"
+        # Fallback push for Knowledge Index (optional, skip if repo doesn't exist)
+        KI_REPO="{{WORKSPACE_DIR}}/DS-Knowledge-Index-{{GITHUB_USER}}"
+        if [ -d "$KI_REPO/.git" ]; then
+            if git -C "$KI_REPO" log --oneline -1 --since="1 hour ago" --grep="week-review" 2>/dev/null | grep -q .; then
+                git -C "$KI_REPO" push >> "$LOG_FILE" 2>&1 && log "Pushed Knowledge Index (fallback)" || log "WARN: KI push failed"
+            fi
         fi
         notify_telegram "week-review"
         ;;

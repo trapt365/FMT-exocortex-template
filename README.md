@@ -25,7 +25,8 @@
 - Закрываешь сессию — результат зафиксирован, план обновлён
 - В понедельник — Стратег готовит черновик недельного плана, вы обсуждаете его на сессии стратегирования
 
-> **Хочешь понять, что за этим стоит?** Смотри [LEARNING-PATH.md](docs/LEARNING-PATH.md) — полный путь изучения: принципы, протоколы, агенты, Pack, SOTA и где всё найти.
+> **Первая установка?** [SETUP-GUIDE.md](docs/SETUP-GUIDE.md) — пошаговое руководство от чистого компьютера (30-60 мин).
+> **Хочешь понять, что за этим стоит?** [LEARNING-PATH.md](docs/LEARNING-PATH.md) — полный путь изучения: принципы, протоколы, агенты, Pack, SOTA и где всё найти.
 
 ---
 
@@ -50,8 +51,8 @@
 
 ```bash
 cd ~/Github    # или ваша рабочая директория
-gh repo clone TserenTserenov/DS-exocortex-setup-agent
-cd DS-exocortex-setup-agent
+gh repo clone TserenTserenov/DS-ai-systems -- --depth 1
+cd DS-ai-systems/setup
 bash setup.sh
 ```
 
@@ -294,9 +295,8 @@ T1: Старт  →  T2: Изучение  →  T3: Персонализация
 | **FPF/** | Framework | Нужны первые принципы (редко, для углублённого изучения) | [FPF](https://github.com/TserenTserenov/FPF) |
 | **ZP/** | Foundation | Нулевые принципы (6 универсальных ограничений) | [ZP](https://github.com/TserenTserenov/ZP) |
 | **PACK-digital-platform/** | Pack | Живой пример Pack (40+ сущностей: роли, тиры, архитектура) | [PACK-digital-platform](https://github.com/TserenTserenov/PACK-digital-platform) |
-| **PACK-MIM/** | Pack | Пример Pack поменьше (22 сущности, мастерская) | [PACK-MIM](https://github.com/TserenTserenov/PACK-MIM) |
 | **FMT-s2r/** | Format | Фреймворк для третьих принципов (S2R = System-to-Role) | [FMT-s2r](https://github.com/TserenTserenov/FMT-s2r) |
-| **DS-Knowledge-Index-Tseren/** | Downstream/surface | Пример surface downstream: блог, посты, материалы | [DS-Knowledge-Index-Tseren](https://github.com/TserenTserenov/DS-Knowledge-Index-Tseren) |
+| **DS-Knowledge-Index-{user}/** | Downstream/surface | Пример surface downstream: блог, посты, материалы | Создаётся пользователем |
 
 ### Опциональные агенты (по мере роста)
 
@@ -333,13 +333,25 @@ FMT-exocortex-template/
 │   └── repo-type-rules.md           # Правила по типам репозиториев
 │
 ├── docs/                            # Справочная документация
+│   ├── SETUP-GUIDE.md               # Пошаговое руководство установки (от нуля)
+│   ├── IWE-HELP.md                  # Справочник IWE для бота (FAQ, глоссарий)
 │   └── LEARNING-PATH.md             # Путь изучения: принципы, протоколы, SOTA
 │
 ├── roles/                          # Роли (точка расширения)
-│   └── strategist/                  # Роль: Стратег (R1)
-│       ├── install.sh               # Установка launchd/cron
-│       ├── prompts/                 # 9 сценариев (day-plan, week-review...)
-│       └── scripts/                 # Скрипты запуска + launchd plist
+│   ├── strategist/                  # Роль: Стратег (R1)
+│   │   ├── install.sh               # Установка launchd/cron
+│   │   ├── prompts/                 # 9 сценариев (day-plan, week-review...)
+│   │   └── scripts/                 # Скрипты запуска + launchd plist
+│   ├── extractor/                   # Роль: Экстрактор знаний (R2)
+│   │   ├── install.sh               # Установка launchd для inbox-check
+│   │   ├── prompts/                 # 4 сценария (session-close, on-demand, inbox-check, audit)
+│   │   ├── scripts/                 # Скрипт запуска + launchd plist
+│   │   └── config/                  # routing.md, feedback-log.md
+│   └── synchronizer/                # Роль: Синхронизатор (R8)
+│       ├── install.sh               # Установка центрального scheduler (launchd)
+│       ├── scripts/                 # scheduler, notify, code-scan, daily-report, sync-files
+│       │   └── templates/           # Шаблоны уведомлений по агентам
+│       └── config.yaml              # Расписание (reference)
 │
 ├── seed/                            # Шаблоны → отдельные репо после setup
 │   └── strategy/                    # → DS-strategy/ (стратегический хаб)
