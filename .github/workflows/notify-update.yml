@@ -1,7 +1,7 @@
 name: Notify Template Update
 
 # Ежедневно в 7:28 MSK (4:28 UTC) проверяет коммиты за 24ч
-# и отправляет дайджест в Telegram-канал.
+# и отправляет дайджест подписчикам через webhook бота @aist_me_bot.
 # Также можно запустить вручную для тестирования.
 
 on:
@@ -43,48 +43,38 @@ jobs:
             exit 0
           fi
 
-          # Extract version header and content between first and second ## headings
           VERSION=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/## //')
           ENTRY=$(sed -n '/^## \[/{n; :loop; /^## \[/q; p; n; b loop}' CHANGELOG.md | head -30)
 
-          # Write to file to preserve newlines
           echo "$VERSION" > /tmp/changelog_version.txt
           echo "$ENTRY" > /tmp/changelog_entry.txt
 
-      - name: Send Telegram notification
+      - name: Send notification via bot webhook
         if: steps.check.outputs.has_changes == 'true'
         env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          BOT_WEBHOOK_URL: ${{ secrets.BOT_WEBHOOK_URL }}
+          TEMPLATE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_WEBHOOK_SECRET }}
         run: |
           VERSION=$(cat /tmp/changelog_version.txt)
           ENTRY=$(cat /tmp/changelog_entry.txt)
           COMMIT_COUNT="${{ steps.check.outputs.commit_count }}"
 
-          # Format message for Telegram (HTML parse mode for better formatting)
-          MESSAGE="🔄 <b>Exocortex Template ${VERSION}</b>
+          # Send to bot webhook (bot broadcasts to subscribers)
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${BOT_WEBHOOK_URL}/api/template-update" \
+            -H "Content-Type: application/json" \
+            -H "X-Webhook-Secret: ${TEMPLATE_WEBHOOK_SECRET}" \
+            -d "$(jq -n \
+              --arg version "$VERSION" \
+              --arg changelog "$ENTRY" \
+              --arg commit_count "$COMMIT_COUNT" \
+              '{version: $version, changelog: $changelog, commit_count: ($commit_count | tonumber)}')")
 
-${COMMIT_COUNT} коммит(ов) за последние 24ч
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
 
-${ENTRY}
-
-<b>Обновить:</b>
-• Терминал: <code>bash update.sh</code>
-• AI CLI: <i>«обнови мой экзокортекс»</i>
-• Проверить: <code>bash update.sh --check</code>"
-
-          # Send message
-          curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TG_CHAT_ID}" \
-            -d parse_mode="HTML" \
-            --data-urlencode "text=${MESSAGE}" \
-            -o /tmp/tg_response.json
-
-          # Check response
-          if jq -e '.ok' /tmp/tg_response.json > /dev/null 2>&1; then
-            echo "✓ Telegram notification sent"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ Bot webhook responded: $BODY"
           else
-            echo "✗ Failed to send notification:"
-            cat /tmp/tg_response.json
+            echo "✗ Bot webhook failed (HTTP $HTTP_CODE): $BODY"
             exit 1
           fi
