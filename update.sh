@@ -108,20 +108,20 @@ fi
 # --- 3. Re-substitute placeholders ---
 echo "[3/6] Re-substituting placeholders..."
 
-# After merge, new lines from upstream may contain /workspace etc.
+# After merge, new lines from upstream may contain /mnt/c/Users/Timur/Documents/IWE etc.
 # Detect values from the current environment
-PLACEHOLDER_COUNT=$(grep -r '/workspace' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.plist" -l 2>/dev/null | wc -l | tr -d ' ')
+PLACEHOLDER_COUNT=$(grep -r '/mnt/c/Users/Timur/Documents/IWE' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.plist" -l 2>/dev/null | wc -l | tr -d ' ')
 
 if [ "$PLACEHOLDER_COUNT" -gt 0 ]; then
-    echo "  Found $PLACEHOLDER_COUNT files with unsubstituted /workspace"
+    echo "  Found $PLACEHOLDER_COUNT files with unsubstituted /mnt/c/Users/Timur/Documents/IWE"
     find "$EXOCORTEX_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | while read file; do
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s|/workspace|$WORKSPACE_DIR|g" "$file"
+            sed -i '' "s|/mnt/c/Users/Timur/Documents/IWE|$WORKSPACE_DIR|g" "$file"
         else
-            sed -i "s|/workspace|$WORKSPACE_DIR|g" "$file"
+            sed -i "s|/mnt/c/Users/Timur/Documents/IWE|$WORKSPACE_DIR|g" "$file"
         fi
     done
-    echo "  Re-substituted /workspace → $WORKSPACE_DIR"
+    echo "  Re-substituted /mnt/c/Users/Timur/Documents/IWE → $WORKSPACE_DIR"
 
     # Commit the re-substitution
     if ! git -C "$EXOCORTEX_DIR" diff --quiet; then

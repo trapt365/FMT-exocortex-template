@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validate Template — проверка целостности FMT-exocortex-template
+# Validate Template — проверка целостности DS-exocortex
 #
 # 5 проверок:
 # 1. Нет автор-специфичного контента
@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="${1:-$HOME/IWE/FMT-exocortex-template}"
+TEMPLATE_DIR="${1:-$HOME/IWE/DS-exocortex}"
 FAIL=0
 
 echo "=== Validating: $TEMPLATE_DIR ==="

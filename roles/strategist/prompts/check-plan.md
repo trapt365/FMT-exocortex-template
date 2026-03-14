@@ -4,7 +4,7 @@
 
 ## Контекст
 
-- Планы: {{WORKSPACE_DIR}}/DS-strategy/current/
+- Планы: /mnt/c/Users/Timur/Documents/IWE/DS-strategy/current/
 
 ## Алгоритм
 
