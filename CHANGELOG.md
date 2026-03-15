@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - **roles.md** — описание ролей экзокортекса + обновление memory policy
 - **ONTOLOGY.md в формате SPF.SPEC.002** — каскадная онтология с двуязычным глоссарием
 - **KE dual routing** — экстрактор знаний разделяет: доменное → Pack, реализационное → DS docs/
+- **dt-collect** — скрипты сбора данных активности для ЦД (WakaTime + git + sessions + WP stats) в роли синхронизатора
 - **Day Rhythm config** — конфиг ритма дня: помодоро-напоминания через WakaTime + launchd
 - **Опциональные компоненты** — README для модульных расширений, обновлённое дерево структуры
 - **HD #29-31** — новые hard distinctions: Pack≠DS, роли владельца, Шаг 0 Open-протокола, Capture реализации
