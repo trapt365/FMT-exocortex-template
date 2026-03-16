@@ -194,6 +194,9 @@ cd ~/IWE
 В терминале:
 
 ```bash
+# Убедиться, что мы в рабочей папке
+cd ~/IWE
+
 # Форкнуть шаблон на свой GitHub и склонировать
 gh repo fork TserenTserenov/FMT-exocortex-template --clone --remote
 cd FMT-exocortex-template
