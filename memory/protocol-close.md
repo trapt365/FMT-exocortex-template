@@ -16,9 +16,9 @@
 #### 1. Сбор данных
 
 ```bash
-for repo in $(ls ~/IWE/); do
-  if [ -d ~/IWE/$repo/.git ]; then
-    commits=$(git -C ~/IWE/$repo log --since="today 00:00" --oneline --no-merges 2>/dev/null)
+for repo in $(ls {{WORKSPACE_DIR}}/); do
+  if [ -d {{WORKSPACE_DIR}}/$repo/.git ]; then
+    commits=$(git -C {{WORKSPACE_DIR}}/$repo log --since="today 00:00" --oneline --no-merges 2>/dev/null)
     [ -n "$commits" ] && echo "=== $repo ===" && echo "$commits"
   fi
 done
@@ -44,7 +44,7 @@ done
 
 **г) Не забыто?** Стратег проверяет:
 - Незакоммиченные изменения (`git status` по всем репо)
-- **Синхронизация веток** (если есть multi-branch workflow): проверить, что ветки не расходятся
+<!-- YOUR CUSTOM CHECKS HERE -->
 - Незаписанные мысли? (спросить пользователя)
 - Обещания кому-то? (спросить пользователя)
 
@@ -86,8 +86,6 @@ done
 - Обновить статусы РП в WeekPlan + MEMORY.md
 - Backup: `memory/ + CLAUDE.md → DS-strategy/exocortex/`
 - Закоммитить DS-strategy
-
-> **Ветки бота:** Если в твоём IWE есть multi-branch workflow (например, pilot + production) — добавь проверку синхронизации веток в секцию «Не забыто?» и в Close report.
 
 ---
 
@@ -166,6 +164,7 @@ done
 **Captures:** [N → Pack, N → DS docs/, N → IWE root (CLAUDE.md, memory/, протоколы)]. Разделять по слоям: Pack (доменное знание), DS (реализационное), IWE root (кросс-системные правила и протоколы). «0» только если ничего не записано никуда.
 **Что проверить:** [конкретно — что требует внимания человека, в чём не уверен]
 **Git:** закоммичено + запушено ✅
+<!-- YOUR CUSTOM CHECKS HERE -->
 **Осталось:** ничего / [что — это Agent→Agent handoff для следующей сессии]
 ```
 

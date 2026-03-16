@@ -1,5 +1,5 @@
 #!/bin/bash
-# dt-collect.sh — сбор данных активности для ЦД
+# dt-collect.sh — сбор данных активности для ЦД (WP-106)
 #
 # Собирает: WakaTime + git stats + Claude Code sessions + WP stats
 # Записывает в digital_twins.data JSONB (Neon) через dt-collect-neon.py
@@ -17,8 +17,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKSPACE="{{WORKSPACE_DIR}}"
-LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
+WORKSPACE="$HOME/IWE"
+LOG_DIR="$HOME/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/dt-collect-$DATE.log"
 
@@ -28,7 +28,7 @@ DRY_RUN=false
 mkdir -p "$LOG_DIR"
 
 # Load env
-ENV_FILE="{{HOME_DIR}}/.config/aist/env"
+ENV_FILE="$HOME/.config/aist/env"
 if [ -f "$ENV_FILE" ]; then
     set -a; source "$ENV_FILE"; set +a
 fi
@@ -128,7 +128,7 @@ print(json.dumps(result))
 }
 
 # ============================================================
-# 2. Git Stats (все репо в workspace)
+# 2. Git Stats (все репо в {{WORKSPACE_DIR}}/)
 # ============================================================
 
 collect_git() {
@@ -136,7 +136,7 @@ collect_git() {
 import subprocess, json, os
 from datetime import datetime, timedelta
 
-workspace = '$WORKSPACE'
+workspace = os.path.expanduser('{{WORKSPACE_DIR}}')
 repos = []
 for name in sorted(os.listdir(workspace)):
     path = os.path.join(workspace, name)
@@ -247,7 +247,7 @@ if os.path.exists(log_path):
 
 # Also count from git log (more reliable — sessions leave commits)
 import subprocess
-workspace = '$WORKSPACE'
+workspace = os.path.expanduser('{{WORKSPACE_DIR}}')
 git_sessions_7d = 0
 for name in os.listdir(workspace):
     path = os.path.join(workspace, name)
@@ -276,7 +276,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_wp() {
-    local MEMORY_FILE="$HOME/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md"
+    local MEMORY_FILE="$HOME/.claude/projects/-Users-$(whoami)-IWE/memory/MEMORY.md"
 
     python3 -c "
 import json, os, re
@@ -290,7 +290,7 @@ if os.path.exists(memory_path):
         in_table = False
         for line in f:
             # Look for the WP table
-            if '| # | ' in line or '| --- |' in line:
+            if '| # | РП' in line or '| --- |' in line:
                 in_table = True
                 continue
             if in_table:
@@ -317,7 +317,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_health() {
-    local STATE_DIR="{{HOME_DIR}}/.local/state/exocortex"
+    local STATE_DIR="$HOME/.local/state/exocortex"
     python3 -c "
 import json, os
 from datetime import datetime
