@@ -216,6 +216,7 @@ done
 - [ ] **Governance-синхронизация:** новые репо/сервисы → обновить: REPOSITORY-REGISTRY, navigation.md, MAP.002↔PROCESSES.md
 - [ ] Backup → DS-strategy/exocortex/ синхронизирован
 - [ ] Context file: done → `mv inbox/WP-*.md → archive/wp-contexts/` (сразу при Close)
+- [ ] **Верификация compliance:** запускался ли /verify в этой сессии? (да → ✅, нет → ❌ + причина)
 - [ ] Отчёт Close сформирован
 - [ ] WP Context File создан/обновлён при ПЕРВОМ Close
 - [ ] Новое репо → MAPSTRATEGIC.md + Strategy.md
