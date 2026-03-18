@@ -8,22 +8,20 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ## [0.8.7] — 2026-03-17
 
 ### Added
-- **Чеклист-верификация (Haiku R23)** — блокирующее правило в CLAUDE.md §2: после любого протокола с чеклистом запускается sub-agent Haiku в роли R23 Верификатор для независимой проверки каждого пункта (VR.SOTA.002 context isolation)
-- **Шаг 10 в Алгоритм Close** (protocol-close.md) — верификация по чеклисту как обязательный финальный шаг (Session Close)
-- **Шаг 5 в Day Close** (protocol-close.md) — верификация по чеклисту перед согласованием с пользователем
+- **Чеклист-верификация (Haiku R23)** — блокирующее правило в [CLAUDE.md](CLAUDE.md) §2: после любого протокола с чеклистом запускается sub-agent Haiku в роли R23 Верификатор для независимой проверки каждого пункта (VR.SOTA.002 context isolation). Добавлена в [Session Close](memory/protocol-close.md) (шаг 10) и Day Close (шаг 5)
 
 ## [0.8.6] — 2026-03-17
 
 ### Added
-- **Роли верификации (R23-R24)** — skill /verify + hard-distinctions #38-40 (WP-122)
-- **Governance-синхронизация** в Day Close — проверка REPOSITORY-REGISTRY, navigation.md, MAP.002↔PROCESSES.md (WP-124)
-- **Collapsible sections** в LEARNING-PATH и SETUP-GUIDE (details/summary)
+- **Роли верификации (R23-R24)** — skill /verify + [hard-distinctions](memory/hard-distinctions.md) #38-40 (WP-122)
+- **Governance-синхронизация** в [Day Close](memory/protocol-close.md) — проверка REPOSITORY-REGISTRY, navigation.md, MAP.002↔PROCESSES.md (WP-124)
+- **Collapsible sections** в [LEARNING-PATH](LEARNING-PATH.md) и [SETUP-GUIDE](SETUP-GUIDE.md) (details/summary)
 - **Онбординг** переработан: пользователь в центре, принципы двусторонние
 
 ## [0.8.5] — 2026-03-17
 
 ### Added
-- **docs/use-cases/USE-CASES.md** — каталог всех 15 сценариев использования IWE (WP-116):
+- **[USE-CASES.md](docs/use-cases/USE-CASES.md)** — каталог всех 15 сценариев использования IWE (WP-116):
   - SC.001–SC.005: планирование, обучение, знания, публикации
   - SC.006–SC.009: обслуживание, триаж, самовосстановление, аналитика
   - SC.010–SC.015: ОРЗ-ритм, стратегирование, онбординг, рабочая сессия, формализация знаний, развитие системы
@@ -31,25 +29,25 @@ Versioning: [Semantic Versioning](https://semver.org/).
 ## [0.8.4] — 2026-03-17
 
 ### Added
-- **docs/onboarding/** — руководство-онбординг IWE для новичков (WP-120):
-  - `onboarding-guide.md` — концептуальный обзор (7 разделов: карта IWE, компоненты, проблемы, решения, путь от нуля, «не бойся», системное мышление)
-  - `onboarding-slides.md` — Marp-презентация (22 слайда, self-paced, светлая тема)
-  - `onboarding-diagrams.md` — 6 Mermaid-схем (карта компонентов, путь пользователя, ОРЗ, тиры T1-T4, экзоскелет vs протез, проблема→решение)
+- **[docs/onboarding/](docs/onboarding/)** — руководство-онбординг IWE для новичков (WP-120):
+  - [onboarding-guide.md](docs/onboarding/onboarding-guide.md) — концептуальный обзор (7 разделов: карта IWE, компоненты, проблемы, решения, путь от нуля, «не бойся», системное мышление)
+  - [onboarding-slides.md](docs/onboarding/onboarding-slides.md) — Marp-презентация (22 слайда, self-paced, светлая тема)
+  - [onboarding-diagrams.md](docs/onboarding/onboarding-diagrams.md) — 6 Mermaid-схем (карта компонентов, путь пользователя, ОРЗ, тиры T1-T4, экзоскелет vs протез, проблема→решение)
 
 ## [0.8.3] — 2026-03-17
 
 ### Added
-- **LEARNING-PATH.md §11** — FAQ: cross-device workflow (ноут + десктоп, кросс-ОС)
+- **[LEARNING-PATH.md](LEARNING-PATH.md) §11** — FAQ: cross-device workflow (ноут + десктоп, кросс-ОС)
 
 ## [0.8.2] — 2026-03-17
 
 ### Added
-- **protocol-open.md** — 4-й класс верификации `trivial` (Haiku): результат очевиден, проверка не нужна
-- **protocol-open.md** — два сценария переключения модели:
+- **[protocol-open.md](memory/protocol-open.md)** — 4-й класс верификации `trivial` (Haiku): результат очевиден, проверка не нужна
+- **[protocol-open.md](memory/protocol-open.md)** — два сценария переключения модели:
   - Сценарий A: вся сессия — Claude рекомендует `/model`, пользователь переключает
   - Сценарий B: отдельная задача внутри сессии — делегирование sub-agent'у (только вниз)
-- **SETUP-GUIDE.md §0.5b** — класс верификации в таблице моделей + описание двух сценариев
-- **LEARNING-PATH.md §5.1b** — trivial в таблице классов + два сценария переключения
+- **[SETUP-GUIDE.md](SETUP-GUIDE.md) §0.5b** — класс верификации в таблице моделей + описание двух сценариев
+- **[LEARNING-PATH.md](LEARNING-PATH.md) §5.1b** — trivial в таблице классов + два сценария переключения
 
 ## [0.8.1] — 2026-03-16
 
