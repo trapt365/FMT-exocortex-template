@@ -238,21 +238,19 @@ if [ -f "$SETTINGS_SRC" ]; then
         else
             # Merge: take mcpServers from upstream, keep user permissions
             if command -v python3 &>/dev/null; then
-                python3 -c "
+                python3 - "$SETTINGS_SRC" "$SETTINGS_DST" <<'PYEOF'
 import json, sys
-with open('$SETTINGS_SRC') as f: src = json.load(f)
-with open('$SETTINGS_DST') as f: dst = json.load(f)
-# Update mcpServers from upstream
+src_path, dst_path = sys.argv[1], sys.argv[2]
+with open(src_path) as f: src = json.load(f)
+with open(dst_path) as f: dst = json.load(f)
 dst['mcpServers'] = src.get('mcpServers', {})
-# Merge permissions: add new MCP tools from upstream, keep user's custom permissions
 src_perms = set(src.get('permissions', {}).get('allow', []))
 dst_perms = set(dst.get('permissions', {}).get('allow', []))
-# Add any new permissions from upstream that user doesn't have
 merged = sorted(dst_perms | src_perms)
 dst.setdefault('permissions', {})['allow'] = merged
-with open('$SETTINGS_DST', 'w') as f: json.dump(dst, f, indent=2, ensure_ascii=False)
+with open(dst_path, 'w') as f: json.dump(dst, f, indent=2, ensure_ascii=False)
 print('  Updated: .claude/settings.local.json (merged)')
-" 2>&1
+PYEOF
             else
                 # Fallback: just copy (no merge)
                 cp "$SETTINGS_SRC" "$SETTINGS_DST"
