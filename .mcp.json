@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "knowledge-mcp": {
+      "type": "http",
+      "url": "https://knowledge-mcp.aisystant.workers.dev/mcp"
+    },
+    "ddt": {
+      "type": "http",
+      "url": "https://digital-twin-mcp.aisystant.workers.dev/mcp"
+    }
+  }
+}

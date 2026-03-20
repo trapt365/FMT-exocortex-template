@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 WORKSPACE="/mnt/c/Users/Timur/Documents/IWE/DS-strategy"
-PROMPTS_DIR="$REPO_DIR/prompts"
+PROMPTS_DIR="/mnt/c/Users/Timur/Documents/IWE/DS-exocortex/strategist-agent/prompts"
 LOG_DIR="$HOME/logs/strategist"
 CLAUDE_PATH="/home/trapt22/.npm-global/bin/claude"
 
