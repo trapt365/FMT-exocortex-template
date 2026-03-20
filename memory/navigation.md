@@ -38,6 +38,7 @@
 |------|------|
 | PACK-education | Методика обучения |
 | PACK-personal | Личностное развитие |
+| PACK-verification | Верификация и приёмка (трансдоменный) |
 
 ## Ключевые документы (Pack DP)
 
@@ -56,6 +57,8 @@
 | knowledge-mcp (исходники) | `DS-MCP/knowledge-mcp/src/index.ts` |
 | knowledge-mcp (ingest) | `DS-MCP/knowledge-mcp/scripts/ingest.ts` |
 | guides-mcp (исходники) | `DS-MCP/guides-mcp/src/index.ts` |
+| fsm-mcp (исходники) | `DS-MCP/fsm-mcp/src/index.ts` |
+| Activity Hub | `DS-IT-systems/activity-hub/` |
 
 ## Стратегия
 

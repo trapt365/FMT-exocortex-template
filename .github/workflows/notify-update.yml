@@ -34,7 +34,7 @@ jobs:
             echo "$COMMIT_COUNT commits found"
           fi
 
-      - name: Extract changelog entry
+      - name: Extract changelog entries for recent dates
         if: steps.check.outputs.has_changes == 'true'
         id: changelog
         run: |
@@ -43,14 +43,54 @@ jobs:
             exit 0
           fi
 
+          # Собираем ВСЕ версии за последние 24ч (сегодня + вчера)
+          TODAY=$(date -u +%Y-%m-%d)
+          YESTERDAY=$(date -u -d "yesterday" +%Y-%m-%d 2>/dev/null || date -u -v-1d +%Y-%m-%d)
+
+          # Первая (самая новая) версия — для заголовка
           VERSION=$(grep -m1 '^## \[' CHANGELOG.md | sed 's/## //')
-          ENTRY=$(sed -n '/^## \[/{n; :loop; /^## \[/q; p; n; b loop}' CHANGELOG.md | head -30)
+
+          # Все записи с датами today или yesterday
+          # Собираем все блоки между ## [...] заголовками, фильтруя по дате
+          python3 -c "
+          import sys
+          today = '$TODAY'
+          yesterday = '$YESTERDAY'
+          entries = []
+          current_block = []
+          current_date = None
+          with open('CHANGELOG.md') as f:
+              for line in f:
+                  if line.startswith('## ['):
+                      if current_block and current_date in (today, yesterday):
+                          entries.extend(current_block)
+                      current_block = []
+                      # Extract date from '## [0.8.7] — 2026-03-17'
+                      parts = line.split('—')
+                      current_date = parts[-1].strip() if len(parts) > 1 else ''
+                  elif current_date is not None:
+                      current_block.append(line)
+              # Last block
+              if current_block and current_date in (today, yesterday):
+                  entries.extend(current_block)
+          result = ''.join(entries).strip()
+          # Limit to ~50 lines
+          lines = result.split('\n')[:50]
+          print('\n'.join(lines))
+          " > /tmp/changelog_entry.txt
 
           echo "$VERSION" > /tmp/changelog_version.txt
-          echo "$ENTRY" > /tmp/changelog_entry.txt
+
+          # Проверяем, есть ли записи changelog за эти даты
+          if [ ! -s /tmp/changelog_entry.txt ]; then
+            echo "No changelog entries for $TODAY or $YESTERDAY — skipping notification"
+            echo "has_changelog=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changelog=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Send notification via bot webhook
-        if: steps.check.outputs.has_changes == 'true'
+        if: steps.check.outputs.has_changes == 'true' && steps.changelog.outputs.has_changelog == 'true'
         env:
           BOT_WEBHOOK_URL: ${{ secrets.BOT_WEBHOOK_URL }}
           TEMPLATE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_WEBHOOK_SECRET }}

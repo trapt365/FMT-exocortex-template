@@ -61,12 +61,14 @@ else
 fi
 
 # 3. Нет захардкоженных /opt/homebrew путей (кроме README, CI, PATH в plist,
-#    validate-template.sh (мета-проверки), setup.sh (fallback default))
+#    validate-template.sh (мета-проверки), setup.sh (fallback default),
+#    PLATFORM-COMPAT.md (документация о совместимости))
 echo -n "[3/5] Hardcoded /opt/homebrew paths... "
 count=$(grep -rn '/opt/homebrew' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
         --include="*.json" --include="*.plist" \
         --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
         | grep -v 'README.md' \
+        | grep -v 'PLATFORM-COMPAT.md' \
         | grep -v 'validate-template.yml' \
         | grep -v '/usr/local/bin.*:/opt/homebrew' \
         | wc -l | tr -d ' ' || true)
@@ -74,7 +76,8 @@ if [ "$count" -gt 0 ]; then
     echo "FAIL ($count hits)"
     grep -rn '/opt/homebrew' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
         --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
-        | grep -v 'README.md' | grep -v 'validate-template.yml' | head -3 || true
+        | grep -v 'README.md' | grep -v 'PLATFORM-COMPAT.md' \
+        | grep -v 'validate-template.yml' | head -3 || true
     FAIL=1
 else
     echo "PASS"

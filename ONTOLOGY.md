@@ -54,6 +54,10 @@
 | Placeholder-переменная | Placeholder Variable | `{{VAR}}` — подставляется setup.sh при развёртывании шаблона | — (реализационное) |
 | Контракт роли | Role Contract | role.yaml + промпты + скрипты в roles/<name>/ | DP.ROLE.001 |
 | Hub-and-Spoke | Hub-and-Spoke | Паттерн координации: DS-strategy (хаб) ↔ WORKPLAN.md в каждом репо (споки) | DP.ROLE.012 |
+| Творческий конвейер | Creative Pipeline | 4 стадии превращения мысли в публикацию: заметка → черновик → заготовка → пост. Каждый артефакт обязан продвинуться или быть закрыт в пределах TTL | DP.M.003 |
+| Guard (страж) | Guard | Автоматическая проверка TTL-нарушений на стратегировании и Day Close | DP.EXOCORTEX.001 |
+| DayPlan | DayPlan | Дневной план — артефакт Day Open. Handoff Стратег→Человек | DP.M.003 |
+| WeekPlan | WeekPlan | Недельный план — артефакт стратегирования. Содержит РП, бюджеты, фокус | DP.M.003 |
 
 ---
 
@@ -80,6 +84,19 @@
 | ЭМОГССБ | 7 арх. характеристик | Evolvability, Scalability, Learnability, Generativity, Speed, Modernity, Security | Pack |
 | DS | Downstream-репозиторий | Downstream Repository | Template |
 | FMT | Формат (шаблон) | Format (Template) | Template |
+| TTL | Срок жизни артефакта | Time To Live | Template |
+| HD | Жёсткое различение | Hard Distinction | Template |
+| SOTA | Современное состояние практик | State Of The Art | Template |
+| SOP | Стандартная операционная процедура | Standard Operating Procedure | FPF |
+| DDD | Предметно-ориентированное проектирование | Domain-Driven Design | FPF |
+| CLI | Интерфейс командной строки | Command-Line Interface | общее |
+| API | Программный интерфейс | Application Programming Interface | общее |
+| LMS | Система управления обучением | Learning Management System | Pack |
+| S2R | Формат «Системы-к-ролям» | Systems-to-Roles | SPF |
+| PII | Персональные данные | Personally Identifiable Information | общее |
+| RSS | Лента новостей | Really Simple Syndication | общее |
+| TG | Telegram | Telegram | общее |
+| ZP | Нулевые принципы | Zero Principles | Base |
 
 ---
 

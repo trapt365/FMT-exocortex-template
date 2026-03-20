@@ -18,6 +18,26 @@ news:
       query: "software engineering systems thinking"
       feeds: []
 
+video:
+  enabled: false                # Enable video scanning at Day Open
+  directories: []               # Local directories with video recordings
+  # Examples:
+  #   - ~/Documents/Zoom
+  #   - ~/Documents/Телемост
+  #   - ~/Видеозаписи Телемост
+  extensions: [mp4, mov, webm, m4a, mp3]
+  stale_days: 3                 # Remind about unprocessed videos older than N days
+  naming_patterns:              # Patterns for auto-matching to WP
+    - "WP-{N}-*"               # Direct WP reference in filename
+    - "{date}-*"               # Date-based matching (YYYY-MM-DD)
+  transcripts_dir: transcripts/ # Relative to first directory in list
+  auto_transcribe:
+    enabled: false              # Requires whisper CLI installed
+    engine: whisper             # whisper | whisper.cpp
+    min_duration_minutes: 5     # Only transcribe videos longer than N min
+  content:
+    suggest_posts: true         # Suggest post ideas from transcribed videos
+
 pomodoro:
   work_minutes: 25
   break_minutes: 5
