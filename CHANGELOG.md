@@ -5,6 +5,14 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] — 2026-03-21
+
+### Fixed
+- **inbox-check.md** — `[processed]` → `[analyzed]`: метка при анализе captures, не при записи в Pack. Корневая причина потери 76% captures
+- **session-close.md** — добавлен шаг 8a: пометка captures `[processed]` только после подтверждённой записи в Pack
+- **extractor.sh** — учёт `[analyzed]` в подсчёте pending captures
+- **session-prep.md** — архивация `[processed]` captures в `archive/captures/` вместо удаления
+
 ## [0.13.0] — 2026-03-20
 
 ### Added
