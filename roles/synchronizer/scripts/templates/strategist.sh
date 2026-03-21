@@ -27,7 +27,8 @@ table_to_list() {
     local file="$1"
     local section="$2"
 
-    sed -n "/^## ${section}/,/^---/p" "$file" \
+    # Ищем секцию по ## заголовку ИЛИ по <summary><b>заголовку</b></summary> (legacy <details>)
+    sed -n "/^## ${section}\|<summary><b>${section}<\/b><\/summary>/,/^---\|^<\/details>/p" "$file" \
         | grep '^|' \
         | tail -n +3 \
         | while IFS='|' read -r _ num rp budget priority status _rest; do
