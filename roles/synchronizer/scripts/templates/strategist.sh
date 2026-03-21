@@ -32,10 +32,10 @@ table_to_list() {
         | grep '^|' \
         | tail -n +3 \
         | while IFS='|' read -r _ num rp budget priority status _rest; do
-            num=$(echo "$num" | xargs)
-            rp=$(echo "$rp" | xargs | sed 's/\*\*//g')
-            budget=$(echo "$budget" | xargs)
-            status=$(echo "$status" | xargs)
+            num=$(echo "$num" | xargs | sed 's/~~//g')
+            rp=$(echo "$rp" | xargs | sed 's/\*\*//g; s/~~//g')
+            budget=$(echo "$budget" | xargs | sed 's/~~//g')
+            status=$(echo "$status" | xargs | sed 's/~~//g')
 
             local icon="⬜"
             case "$status" in
