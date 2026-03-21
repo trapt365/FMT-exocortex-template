@@ -69,7 +69,7 @@ MCP (Model Context Protocol) — протокол, через который Cla
 
 > Поиск по руководствам: `knowledge-mcp search("запрос", source_type="guides")`.
 
-MCP подключается автоматически через `.claude/settings.local.json`. Проверка: открой Claude Code → попроси «Найди документы про принципы» — Claude использует `knowledge-mcp search`.
+MCP подключается через https://claude.ai/settings/connectors (см. SETUP-GUIDE §1.3b). Проверка: `/mcp` в Claude Code → серверы Connected. Попроси «Найди документы про принципы» — Claude использует `knowledge-mcp search`.
 
 ---
 
@@ -161,7 +161,7 @@ bash update.sh --check  # проверить без применения
 
 **Заметки не приходят из Telegram** — проверь подписку в @aist_me_bot. Формат: точка + текст (`.Моя заметка`).
 
-**MCP не работает (Claude не ищет по базе)** — проверь `.claude/settings.local.json` в корне экзокортекса. Должен содержать `mcpServers` с тремя серверами. Если файла нет — `bash update.sh`.
+**MCP не работает (Claude не ищет по базе)** — проверь подключение: `/mcp` в Claude Code. Серверы должны быть Connected. Если их нет — добавь через https://claude.ai/settings/connectors (см. SETUP-GUIDE §1.3b).
 
 **Как настроить уведомления в Telegram** — создай `~/.config/aist/env`:
 ```bash
