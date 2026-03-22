@@ -8,15 +8,11 @@
 
 ## 1. Pack-репо по домену
 
-> Добавь свои Pack'и в эту таблицу. Пример:
-
 | Домен | Pack | Префикс | Путь |
 |-------|------|---------|------|
-| _Твой домен (напр. Machine Learning)_ | _PACK-my-domain_ | _MD_ | _/mnt/c/Users/Timur/Documents/IWE/PACK-my-domain/pack/my-domain/_ |
-
-<!-- Удали пример выше и добавь свои Pack'и. Формат:
-| Домен (ключевые слова) | Имя Pack-репо | Короткий префикс (2-3 буквы) | Путь к pack/ директории |
--->
+| Питание, здоровье, привычки, meal prep, КБЖУ, дети | PACK-personal | PP | /home/trapt22/IWE/PACK-personal/pack/personal/ |
+| Обучение, системное мышление, мышление письмом, курсы | PACK-education | PE | /home/trapt22/IWE/PACK-education/pack/education/ |
+| Трекинг, исследования, консалтинг, stomresearch, kense | PACK-consulting | PC | /home/trapt22/IWE/PACK-consulting/pack/consulting/ |
 
 ## 2. Директории по типу знания
 

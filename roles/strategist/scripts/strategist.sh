@@ -7,8 +7,8 @@ set -e
 # Конфигурация
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="/mnt/c/Users/Timur/Documents/IWE/DS-strategy"
-PROMPTS_DIR="/mnt/c/Users/Timur/Documents/IWE/DS-exocortex/strategist-agent/prompts"
+WORKSPACE="/home/trapt22/IWE/DS-strategy"
+PROMPTS_DIR="/home/trapt22/IWE/DS-exocortex/roles/strategist/prompts"
 LOG_DIR="$HOME/logs/strategist"
 CLAUDE_PATH="/home/trapt22/.npm-global/bin/claude"
 
@@ -129,7 +129,7 @@ acquire_lock() {
 }
 
 # Читаем strategy_day из конфига (L4 Personal)
-RHYTHM_CONFIG="$HOME/.claude/projects/-Users-$(whoami)-IWE/memory/day-rhythm-config.yaml"
+RHYTHM_CONFIG="/home/trapt22/IWE/memory/day-rhythm-config.yaml"
 STRATEGY_DAY_NAME=$(grep 'strategy_day:' "$RHYTHM_CONFIG" 2>/dev/null | awk '{print $2}' || echo "monday")
 # Конвертируем имя дня в номер (1=Mon..7=Sun)
 case "$STRATEGY_DAY_NAME" in
