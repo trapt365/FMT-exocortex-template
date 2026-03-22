@@ -37,16 +37,25 @@
 
 ### Алгоритм Quick Close (7 шагов)
 
-0. **Pull** → `cd DS-strategy && git pull --rebase`
+> **Исполнение:** всегда через `/run-protocol close` (пошаговый чеклист, предотвращает пропуск шагов).
+> **Принцип порядка:** «горячий контекст» — механические статусы сразу после commit (пока файлы свежие), содержательные шаги (KE, верификация) — в середине.
+
+0. **Pull** → `cd DS-my-strategy && git pull --rebase`
 1. **Commit + Push** — все изменения зафиксированы
-<!-- YOUR CUSTOM CHECKS HERE -->
-2. **KE (Knowledge Extraction)** → прочитай и выполни `DS-IT-systems/DS-ai-systems/extractor/prompts/session-close.md`:
+<!-- AUTHOR-ONLY: CHANGELOG FMT — только для разработчика платформы -->
+1b. **CHANGELOG FMT** (если были коммиты в FMT-exocortex-template): обновить `FMT-exocortex-template/CHANGELOG.md` **сейчас**, пока контекст изменений свежий. На Day Close контекст потерян.
+<!-- /AUTHOR-ONLY -->
+2. **Статусы** (механические, пока файлы «горячие»):
+   - **MEMORY.md** — обновить статус РП (одна строка: `in_progress` / `done`)
+   - **DayPlan** — обновить строку РП в `DS-my-strategy/current/DayPlan YYYY-MM-DD.md`. **Правило зачёркивания:** зачеркнуть всё, что отработано на сегодня — даже если РП остаётся in_progress (в WeekPlan он не зачёркивается, пока не done). DayPlan отражает «что сделано сегодня», WeekPlan — «что закрыто на неделе». Day Close = safety net, но DayPlan должен быть актуален между сессиями.
+   - **WP-REGISTRY** (при done) — `DS-my-strategy/docs/WP-REGISTRY.md`: зачеркнуть строку, статус → `~~✅~~ | ~~done~~`. Пропуск = рассинхрон MEMORY vs REGISTRY.
+3. **KE (Knowledge Extraction)** → прочитай и выполни `DS-IT-systems/DS-ai-systems/extractor/prompts/session-close.md`:
    - Собрать отложенные captures + проверить пропущенные
    - Классифицировать → маршрутизировать → формализовать → валидировать
    - Показать Extraction Report → получить одобрение
    - Применить одобренные (accept → Pack/CLAUDE.md/memory)
    - Немедленные captures (CLAUDE.md, repo CLAUDE.md) — применить сразу
-3. **Verification Gate** (VR.M.003 — приёмка WP):
+4. **Verification Gate** (VR.M.003 — приёмка WP):
    - Прочитать WP context file → извлечь критерии готовности
    - Проверить по verification_class:
      - **trivial/closed-loop:** автоматический pass (не задерживать Close)
@@ -54,27 +63,27 @@
      - **problem-framing:** полная проверка + пометка «требует приёмки человеком»
    - Если РП done → verdict обязателен. Если in_progress → skip
    - Verdict НЕ блокирует Close — записывается в отчёт для решения человека
-3b. **Code Verification** (автотриггер — S56):
+4b. **Code Verification** (автотриггер — S56):
    - Проверить `git diff --name-only` по затронутым репо
    - Если среди изменённых файлов есть **код** (`.py`, `.ts`, `.sh`, `.sql`, `.yaml`, `.json`) → запустить `/verify code` (sub-agent Верификатор с context isolation)
    - Если только `.md` файлы → пропустить (верификация кода не нужна)
    - Если в сессии был **АрхГейт** и после него менялся код → запустить `/verify archgate` вместо `/verify code`
    - Verdict → в секцию «Что проверить» отчёта
-4. **MEMORY.md** — обновить статус РП (одна строка: `in_progress` / `done`)
-4b. **DayPlan** — обновить строку РП в `DS-strategy/current/DayPlan YYYY-MM-DD.md`. **Правило зачёркивания:** зачеркнуть всё, что отработано на сегодня — даже если РП остаётся in_progress (в WeekPlan он не зачёркивается, пока не done). DayPlan отражает «что сделано сегодня», WeekPlan — «что закрыто на неделе». Day Close = safety net, но DayPlan должен быть актуален между сессиями.
 5. **WP Context File:**
-   - in_progress → обновить секцию «Осталось» в `DS-strategy/inbox/WP-{N}-{slug}.md`
+   - in_progress → обновить секцию «Осталось» в `DS-my-strategy/inbox/WP-{N}-{slug}.md`
    - done → пометить (архивация — на Day Close)
-   - Незавершённое → context file. Идея → `<repo>/MAPSTRATEGIC.md`. Зерно → `DS-strategy/drafts/draft-list.md`
-6. **Отчёт** (5-7 строк) + закоммитить DS-strategy
+   - Незавершённое → context file. Идея → `<repo>/MAPSTRATEGIC.md`. Зерно → `DS-my-strategy/drafts/draft-list.md`
+6. **Отчёт** (5-7 строк) + закоммитить DS-my-strategy
 
 ### Чеклист Quick Close
 
 - [ ] Всё закоммичено и запушено
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- AUTHOR-ONLY: CHANGELOG -->
+- [ ] **CHANGELOG FMT:** коммиты в FMT → CHANGELOG обновлён (пока контекст свежий)
+<!-- /AUTHOR-ONLY -->
+- [ ] **Статусы:** MEMORY.md + DayPlan + WP-REGISTRY обновлены (сразу после commit)
 - [ ] KE выполнен, captures применены
-- [ ] MEMORY.md: статус РП обновлён
-- [ ] DayPlan: строка РП обновлена (done → зачёркнуто)
+- [ ] Verification Gate пройден (WP + code)
 - [ ] WP Context: «Осталось» записано (или done помечен)
 - [ ] Repo CLAUDE.md проверен (если feat-коммиты)
 - [ ] Отчёт сформирован
@@ -105,7 +114,10 @@
 **Captures:** [N → Pack, N → DS docs/, N → IWE root]. «0» только если ничего не записано.
 **Что проверить:** [что требует внимания человека]
 **Git:** закоммичено + запушено ✅
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- AUTHOR-ONLY: Деплой и ветки конкретных систем автора -->
+**Деплой бота:** залито на `pilot` ✅ / на `new-architecture` не заливалось
+**Ветки бота:** pilot и new-architecture синхронизированы ✅ / расходятся
+<!-- /AUTHOR-ONLY -->
 **Осталось:** ничего / [что — Agent→Agent handoff для следующей сессии]
 ```
 
@@ -124,12 +136,14 @@
 
 ### Алгоритм Day Close (12 шагов)
 
+> **Исполнение:** всегда через `/run-protocol day-close` (пошаговый чеклист). Day Close длиннее Quick Close — риск пропуска шагов выше.
+
 #### 1. Сбор данных
 
 ```bash
-for repo in $(ls {{WORKSPACE_DIR}}/); do
-  if [ -d {{WORKSPACE_DIR}}/$repo/.git ]; then
-    commits=$(git -C {{WORKSPACE_DIR}}/$repo log --since="today 00:00" --oneline --no-merges 2>/dev/null)
+for repo in $(ls ~/IWE/); do
+  if [ -d ~/IWE/$repo/.git ]; then
+    commits=$(git -C ~/IWE/$repo log --since="today 00:00" --oneline --no-merges 2>/dev/null)
     [ -n "$commits" ] && echo "=== $repo ===" && echo "$commits"
   fi
 done
@@ -139,17 +153,19 @@ done
 
 #### 2. Governance batch (одним проходом)
 
-**2a.** Обновить `DS-strategy/current/Plan W{N}...` (WeekPlan): статусы РП. **Grep по номеру РП** — обновить ВСЕ упоминания.
+**2a.** Обновить `DS-my-strategy/current/Plan W{N}...` (WeekPlan): статусы РП. **Grep по номеру РП** — обновить ВСЕ упоминания.
 
-**2b.** Обновить `DS-strategy/current/DayPlan YYYY-MM-DD.md`: статусы **всех строк** (РП + ad-hoc). Done → зачеркнуть.
+**2b.** Обновить `DS-my-strategy/current/DayPlan YYYY-MM-DD.md`: статусы **всех строк** (РП + ad-hoc). Done → зачеркнуть.
 
-**2c.** Обновить `DS-strategy/docs/WP-REGISTRY.md`: статусы + даты.
+**2c.** Обновить `DS-my-strategy/docs/WP-REGISTRY.md`: статусы + даты.
 
-**2d.** Обновить `DS-strategy/inbox/open-sessions.log`: удалить строки закрытых сессий.
+**2d.** Обновить `DS-my-strategy/inbox/open-sessions.log`: удалить строки закрытых сессий.
 
 **2e.** Governance-синхронизация: новые репо/сервисы за день? → REPOSITORY-REGISTRY, navigation.md, MAP.002↔PROCESSES.md.
 
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- AUTHOR-ONLY: CHANGELOG FMT -->
+**2f.** ~~CHANGELOG FMT~~ — перенесён в Quick Close (шаг 1b). На Day Close только проверить, что не пропущен.
+<!-- /AUTHOR-ONLY -->
 
 #### 3. Архивация
 
@@ -162,29 +178,38 @@ done
 
 ```bash
 # Запуск одной командой:
-{{WORKSPACE_DIR}}/DS-IT-systems/DS-ai-systems/synchronizer/scripts/day-close.sh
+~/IWE/DS-IT-systems/DS-ai-systems/synchronizer/scripts/day-close.sh
 ```
 
 Скрипт выполняет:
 - **Linear sync:** `linear-sync.sh` (синхронизация статусов)
 - **Downstream sync:** `update.sh` (reindex + pack-project + template — заменяет отдельный selective-reindex)
-- **Backup:** `memory/ + CLAUDE.md → DS-strategy/exocortex/`
+- **Backup:** `memory/ + CLAUDE.md → DS-my-strategy/exocortex/`
 
 #### 5. Мультипликатор IWE (расчёт)
 
 > **Мультипликатор = Бюджет закрыт / WakaTime.** Показывает, насколько агент-экзоскелет усиливает работу.
 > Пример: WakaTime 10ч 14мин, бюджет закрыт ~21.4h → мультипликатор 2.09x.
 
-**Алгоритм:**
+**Алгоритм (день):**
 
 1. **WakaTime** — физическое время за день. Источник: WakaTime API или `wakatime --today`.
-2. **Бюджет закрыт** — сумма бюджетных оценок по всем РП, над которыми работали сегодня, взвешенная по прогрессу:
-   - done → 100% бюджета РП
-   - partial → % выполнения × бюджет РП (оценить по объёму сделанного)
-   - not started → 0
+2. **Бюджет закрыт** — сумма бюджетных оценок по РП, зачёркнутым (done) сегодня:
+   - Считаются ТОЛЬКО done-РП (зачёркнутые в DayPlan сегодня)
+   - Зонтичные/многофазные РП — пропорционально выполненным фазам (не весь бюджет)
+   - partial и not started НЕ входят в расчёт мультипликатора
    - Источник: таблица «План на сегодня» из DayPlan (колонка «Бюджет»)
-3. **Мультипликатор** = Бюджет закрыт / WakaTime. Формат: `N.Nx`
-4. **Бюджет недели** = Бюджет_W{N} - WakaTime_total_week
+3. **Мультипликатор дня** = Бюджет закрыт / WakaTime. Формат: `N.Nx`
+
+**Алгоритм (неделя, при Week Close):**
+
+4. **WakaTime недели** — сумма физического времени за все 7 дней.
+5. **Бюджет закрыт за неделю** — сумма бюджетов ВСЕХ done-РП из WeekPlan (зачёркнутые строки):
+   - Диапазон → среднее (3-4h → 3.5h)
+   - Зонтичные → пропорционально фазам
+   - «—» / ongoing / merged / поглощён → 0h
+6. **Мультипликатор недели** = Бюджет закрыт за неделю / WakaTime недели. Формат: `N.Nx`
+7. **Средний мультипликатор** = мультипликатор недели (единый расчёт, НЕ среднее дневных)
 
 #### 6. Черновик итогов (показать пользователю)
 
@@ -198,7 +223,21 @@ done
 
 **г) Не забыто?** Стратег проверяет:
 - Незакоммиченные изменения (`git status` по всем репо)
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- AUTHOR-ONLY: Проверки специфичных для автора систем -->
+- **Синхронизация веток бота** (pilot vs new-architecture):
+  ```bash
+  cd ~/IWE/DS-IT-systems/aist_bot_newarchitecture
+  git fetch origin
+  DIFF_STAT=$(git diff origin/pilot origin/new-architecture -- ':!.DS_Store' --stat)
+  if [ -z "$DIFF_STAT" ]; then
+    echo "pilot и new-architecture: содержимое идентично ✅"
+  else
+    echo "pilot и new-architecture: РАСХОДЯТСЯ по содержимому ⚠️"
+    echo "$DIFF_STAT"
+  fi
+  ```
+  Сигнализировать ТОЛЬКО если `git diff` показывает разницу в содержимом.
+<!-- /AUTHOR-ONLY -->
 - Незаписанные мысли? (спросить пользователя)
 - Обещания кому-то? (спросить пользователя)
 
@@ -238,10 +277,10 @@ done
 |---------|----------|
 | **WakaTime (физическое время)** | Xч Yмин |
 | **Бюджет закрыт (оценки РП)** | ~Nh |
-| **Мультипликатор** | **N.Nx** |
-| **Бюджет недели W{N}** | осталось Zh из Bh |
+| **Мультипликатор дня** | **N.Nx** |
 
 > Формула: Бюджет закрыт / WakaTime. Показывает усиление от агента-экзоскелета.
+> Недельный мультипликатор считается при Week Close: Σ бюджетов done-РП за неделю / WakaTime за неделю.
 
 **Что нового узнал:** ...
 
@@ -254,7 +293,7 @@ done
 *Закрыто: YYYY-MM-DD HH:MM*
 ```
 
-#### 9. Закоммитить DS-strategy
+#### 9. Закоммитить DS-my-strategy
 
 #### 10. Верификация по чеклисту (Day Close)
 
@@ -277,7 +316,9 @@ done
 - [ ] **WP context:** done → `mv inbox/ → archive/wp-contexts/`
 - [ ] **Draft-list:** Pack обогащён → черновик предложен?
 - [ ] **Видео:** обработанные помечены (если video.enabled)
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- AUTHOR-ONLY: CHANGELOG -->
+- [ ] **CHANGELOG FMT:** проверить, что обновлён в Quick Close (не пропущен)
+<!-- /AUTHOR-ONLY -->
 - [ ] **Governance:** REPOSITORY-REGISTRY, navigation.md, MAP.002
 - [ ] **Backup:** `day-close.sh` выполнен (backup + reindex + linear)
 - [ ] **Верификация compliance:** /verify запускался сегодня?
@@ -296,6 +337,8 @@ done
 > **Протокол:** `week-review.md` + дополнительные шаги ниже.
 
 ### Дополнительные шаги Week Close (поверх Week Review)
+
+> **Исполнение:** через `/run-protocol week-close`. Week Review (`week-review.md`) + шаги ниже.
 
 #### 1. Ротация уроков в MEMORY.md
 
