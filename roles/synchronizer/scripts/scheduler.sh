@@ -23,7 +23,7 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="/mnt/c/Users/Timur/Documents/IWE/DS-exocortex/roles"
+ROLES_DIR="/home/trapt22/IWE/DS-exocortex/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Role runner discovery: reads runner path from role.yaml, fallback to convention
@@ -98,7 +98,7 @@ cleanup_state() {
 # Разделяет архивацию (мгновенно) и генерацию (15+ мин Claude Code).
 # Гарантирует: даже если генерация ещё не началась, старый план не висит в current/.
 pre_archive_dayplan() {
-    local strategy_dir="/mnt/c/Users/Timur/Documents/IWE/DS-strategy"
+    local strategy_dir="/home/trapt22/IWE/DS-strategy"
     local archive_dir="$strategy_dir/archive/day-plans"
     local moved=0
 
@@ -141,6 +141,17 @@ dispatch() {
             mark_done_week "strategist-week-review"
         else
             log "WARN: strategist week-review failed (will retry next dispatch)"
+        fi
+        ran=1
+    fi
+
+    # --- Экстрактор: obsidian-scan (03:00+, до strategist morning) ---
+    if (( 10#$HOUR >= 3 )) && ! ran_today "extractor-obsidian-scan"; then
+        log "→ extractor obsidian-scan (hour=$HOUR)"
+        if "$EXTRACTOR_SH" obsidian-scan >> "$LOG_FILE" 2>&1; then
+            mark_done "extractor-obsidian-scan"
+        else
+            log "WARN: extractor obsidian-scan failed (will retry next dispatch)"
         fi
         ran=1
     fi
