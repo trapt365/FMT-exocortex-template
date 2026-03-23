@@ -156,7 +156,7 @@ server.tool(
       maxCount: "200",
     });
 
-    // Filter out completed and cancelled tasks (checked: 1=done, 2=cancelled)
+    // Note: Singularity API v2 only returns active tasks (no includeCompleted param available)
     const active = data.tasks.filter((t) => !t.checked || t.checked === 0);
     // Sort by start time, then scheduleOrder
     active.sort((a, b) => {
@@ -282,16 +282,12 @@ server.tool(
       .string()
       .optional()
       .describe("Конец диапазона дат (ISO 8601)"),
-    includeCompleted: z
-      .boolean()
-      .optional()
-      .describe("Включить выполненные задачи"),
     maxCount: z
       .number()
       .optional()
       .describe("Максимальное количество задач (до 1000)"),
   },
-  async ({ projectId, startDateFrom, startDateTo, includeCompleted, maxCount }) => {
+  async ({ projectId, startDateFrom, startDateTo, maxCount }) => {
     const params: Record<string, string> = {
       maxCount: String(maxCount ?? 200),
     };
@@ -299,12 +295,10 @@ server.tool(
     if (startDateFrom) params.startDateFrom = startDateFrom;
     if (startDateTo) params.startDateTo = startDateTo;
 
+    // Note: Singularity API v2 only returns active tasks (no includeCompleted param available)
     const data = await apiRequest<TaskListResponse>("/task", params);
 
-    let tasks = data.tasks;
-    if (!includeCompleted) {
-      tasks = tasks.filter((t) => !t.checked || t.checked === 0);
-    }
+    const tasks = data.tasks.filter((t) => !t.checked || t.checked === 0);
     tasks.sort((a, b) => a.scheduleOrder - b.scheduleOrder);
 
     const lines: string[] = [`## Задачи (${tasks.length})\n`];
