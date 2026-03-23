@@ -2,7 +2,7 @@
 # Шаблон уведомлений: Экстрактор (R2)
 # Вызывается из notify.sh через source
 
-REPORTS_DIR="/mnt/c/Users/Timur/Documents/IWE/DS-strategy/inbox/extraction-reports"
+REPORTS_DIR="/home/trapt22/IWE/DS-strategy/inbox/extraction-reports"
 DATE=$(date +%Y-%m-%d)
 
 build_message() {
@@ -32,6 +32,10 @@ build_message() {
             else
                 printf "Inbox пуст."
             fi
+            ;;
+
+        "obsidian-scan")
+            printf "<b>📓 Obsidian Scan завершён</b>\n\n📅 %s\n\nЗаметки извлечены в inbox." "$DATE"
             ;;
 
         "audit")

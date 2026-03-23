@@ -32,7 +32,7 @@ get_role_runner() {
     local yaml="$ROLES_DIR/$role/role.yaml"
     if [ -f "$yaml" ]; then
         local runner
-        runner=$(grep '^runner:' "$yaml" | sed 's/runner: *//' | tr -d '"' | tr -d "'")
+        runner=$(grep '^runner:' "$yaml" | sed 's/runner: *//' | tr -d '"' | tr -d "'" | tr -d '\r')
         [ -n "$runner" ] && echo "$ROLES_DIR/$role/$runner" && return
     fi
     # Fallback: convention-based path
@@ -195,6 +195,7 @@ dispatch() {
         log "→ synchronizer code-scan (hour=$HOUR)"
         if "$SCRIPT_DIR/code-scan.sh" >> "$LOG_FILE" 2>&1; then
             mark_done "synchronizer-code-scan"
+            "$NOTIFY_SH" synchronizer code-scan >> "$LOG_FILE" 2>&1 || true
         else
             log "WARN: code-scan failed (will retry next dispatch)"
         fi
@@ -218,6 +219,7 @@ dispatch() {
             log "→ synchronizer daily-report (hour=$HOUR)"
             if "$SCRIPT_DIR/daily-report.sh" >> "$LOG_FILE" 2>&1; then
                 mark_done "synchronizer-daily-report"
+                "$NOTIFY_SH" synchronizer daily-report >> "$LOG_FILE" 2>&1 || true
             else
                 log "WARN: daily-report failed (will retry next dispatch)"
             fi

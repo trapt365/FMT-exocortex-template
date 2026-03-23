@@ -21,6 +21,8 @@ MEMORY_SRC="$HOME/.claude/projects/-Users-$(whoami)-IWE/memory"
 EXOCORTEX_DST="$DS_STRATEGY/exocortex"
 SELECTIVE_REINDEX="$WORKSPACE_DIR/DS-MCP/knowledge-mcp/scripts/selective-reindex.sh"
 LINEAR_SYNC="$WORKSPACE_DIR/DS-IT-systems/DS-ai-systems/synchronizer/scripts/linear-sync.sh"
+FETCH_WAKATIME="$WORKSPACE_DIR/DS-exocortex/roles/strategist/scripts/fetch-wakatime.sh"
+ENV_FILE="$HOME/.config/aist/env"
 LOG_FILE="$DS_STRATEGY/inbox/day-close.log"
 # === /КОНФИГУРАЦИЯ ===
 
@@ -103,12 +105,85 @@ do_linear() {
   "$LINEAR_SYNC"
 }
 
+# --- Шаг 4: WakaTime → DayPlan (мультипликатор) ---
+do_wakatime() {
+  log "Шаг 4/4: WakaTime → DayPlan"
+
+  local today
+  today=$(date +%Y-%m-%d)
+  local dayplan="$DS_STRATEGY/current/DayPlan $today.md"
+
+  if [ ! -f "$dayplan" ]; then
+    warn "  DayPlan не найден: $dayplan — пропуск"
+    return 0
+  fi
+
+  # Проверяем, есть ли уже секция мультипликатора
+  if grep -q "### Мультипликатор IWE" "$dayplan" 2>/dev/null; then
+    log "  Мультипликатор уже есть в DayPlan — пропуск"
+    return 0
+  fi
+
+  # Загружаем env с ключами
+  if [ -f "$ENV_FILE" ]; then
+    set -a; source "$ENV_FILE"; set +a
+  fi
+
+  # Пробуем wakatime-cli
+  local waka_today=""
+  if command -v wakatime >/dev/null 2>&1; then
+    waka_today=$(wakatime --today 2>/dev/null || true)
+  elif [ -x "$HOME/.wakatime/wakatime-cli" ]; then
+    waka_today=$("$HOME/.wakatime/wakatime-cli" --today 2>/dev/null || true)
+  fi
+
+  if [ -z "$waka_today" ]; then
+    warn "  WakaTime недоступен — пропуск"
+    return 0
+  fi
+
+  # Ищем маркер для вставки (после строки "**Коммиты:**")
+  if ! grep -q '^\*\*Коммиты:\*\*' "$dayplan" 2>/dev/null; then
+    warn "  Не найдена строка **Коммиты:** в DayPlan — пропуск"
+    return 0
+  fi
+
+  # Вставляем секцию после строки **Коммиты:**
+  local marker_line
+  marker_line=$(grep -n '^\*\*Коммиты:\*\*' "$dayplan" | tail -1 | cut -d: -f1)
+
+  local wakatime_block
+  wakatime_block=$(cat <<WAKA
+
+### Мультипликатор IWE
+
+| Метрика | Значение |
+|---------|----------|
+| **WakaTime (физическое время)** | $waka_today |
+| **Бюджет закрыт (оценки РП)** | _(заполняется Claude)_ |
+| **Мультипликатор** | _(заполняется Claude)_ |
+
+> WakaTime добавлен автоматически. Бюджет и мультипликатор заполняет Claude при Day Close.
+WAKA
+)
+
+  # Вставляем после marker_line
+  local tmp
+  tmp=$(mktemp)
+  head -n "$marker_line" "$dayplan" > "$tmp"
+  echo "$wakatime_block" >> "$tmp"
+  tail -n +"$((marker_line + 1))" "$dayplan" >> "$tmp"
+  mv "$tmp" "$dayplan"
+
+  log "  WakaTime ($waka_today) добавлен в DayPlan"
+}
+
 # --- Лог ---
 write_log() {
   local date_str
   date_str=$(date "+%Y-%m-%d %H:%M")
   mkdir -p "$(dirname "$LOG_FILE")"
-  echo "$date_str | day-close | backup=$1 reindex=$2 linear=$3" >> "$LOG_FILE"
+  echo "$date_str | day-close | backup=$1 reindex=$2 linear=$3 wakatime=${4:-skip}" >> "$LOG_FILE"
 }
 
 # --- Main ---
@@ -117,15 +192,17 @@ main() {
   local run_backup=false
   local run_reindex=false
   local run_linear=false
+  local run_wakatime=false
 
   for arg in "$@"; do
     case "$arg" in
-      --backup)  run_backup=true; do_all=false ;;
-      --reindex) run_reindex=true; do_all=false ;;
-      --linear)  run_linear=true; do_all=false ;;
+      --backup)   run_backup=true; do_all=false ;;
+      --reindex)  run_reindex=true; do_all=false ;;
+      --linear)   run_linear=true; do_all=false ;;
+      --wakatime) run_wakatime=true; do_all=false ;;
       --help|-h)
-        echo "Использование: day-close.sh [--backup] [--reindex] [--linear]"
-        echo "  Без аргументов — все три шага"
+        echo "Использование: day-close.sh [--backup] [--reindex] [--linear] [--wakatime]"
+        echo "  Без аргументов — все четыре шага"
         exit 0
         ;;
       *)
@@ -139,11 +216,16 @@ main() {
     run_backup=true
     run_reindex=true
     run_linear=true
+    run_wakatime=true
   fi
 
   log "=== Day Close (автоматические шаги) ==="
 
-  local backup_status="skip" reindex_status="skip" linear_status="skip"
+  local backup_status="skip" reindex_status="skip" linear_status="skip" wakatime_status="skip"
+
+  if $run_wakatime; then
+    if do_wakatime; then wakatime_status="ok"; else wakatime_status="fail"; fi
+  fi
 
   if $run_backup; then
     if do_backup; then backup_status="ok"; else backup_status="fail"; fi
@@ -157,10 +239,10 @@ main() {
     if do_linear; then linear_status="ok"; else linear_status="fail"; fi
   fi
 
-  write_log "$backup_status" "$reindex_status" "$linear_status"
+  write_log "$backup_status" "$reindex_status" "$linear_status" "$wakatime_status"
 
   log "=== Готово ==="
-  log "  backup=$backup_status  reindex=$reindex_status  linear=$linear_status"
+  log "  wakatime=$wakatime_status  backup=$backup_status  reindex=$reindex_status  linear=$linear_status"
 }
 
 main "$@"
