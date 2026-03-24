@@ -5,6 +5,12 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.14.2] — 2026-03-24
+
+### Changed
+- **protocol-open.md § Ритуал (Шаг 1)** — каждый элемент отчёта с новой строки (было: всё в одну строку)
+- **LEARNING-PATH.md § Ритуал** — аналогичное форматирование
+
 ## [0.14.1] — 2026-03-24
 
 ### Changed
