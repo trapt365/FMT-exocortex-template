@@ -250,7 +250,21 @@ else
     log "Report written: $REPORT_FILE"
 
     cd "$STRATEGY_DIR"
-    git pull --rebase --quiet 2>/dev/null || log "WARN: pull --rebase failed (offline?)"
+
+    # Stash dirty files so pull --rebase can work on a clean tree
+    local stashed=false
+    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+        git stash --quiet 2>/dev/null && stashed=true && log "Stashed dirty working tree"
+    fi
+
+    local pull_ok=true
+    git pull --rebase --quiet 2>/dev/null || { log "WARN: pull --rebase failed (offline?)"; pull_ok=false; }
+
+    # Restore stashed changes
+    if [ "$stashed" = true ]; then
+        git stash pop --quiet 2>/dev/null || log "WARN: stash pop conflict — manual resolution needed"
+    fi
+
     git reset --quiet 2>/dev/null || true
 
     archive_old_reports
@@ -260,8 +274,12 @@ else
 
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: scheduler report $DATE" --quiet
-        git push --quiet 2>/dev/null || log "WARN: push failed"
-        log "Committed and pushed"
+        if [ "$pull_ok" = true ]; then
+            git push --quiet 2>/dev/null || log "WARN: push failed"
+            log "Committed and pushed"
+        else
+            log "WARN: committed locally but NOT pushed (pull failed earlier — will retry next run)"
+        fi
     else
         log "No changes to commit"
     fi
