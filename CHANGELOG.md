@@ -16,6 +16,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - **skill `/day-open`** — `.claude/skills/day-open/SKILL.md`: шаблоны DayPlan, WeekPlan, compact dashboard. Загружаются только при Day Open
 - **Lesson Hygiene** в protocol-close.md (Day Close §3b) — симметрия: Open пишет уроки → Close чистит. Предотвращает раздувание MEMORY.md. Цель: ≤8 уроков
 - **validate-template.sh** — проверка `.claude/skills/day-open/SKILL.md`
+- **skill `/iwe-rules-review`** — еженедельное ревью 14 операционных правил IWE (DP.M.008 #14). Триггер: Week Close
+- **HD #43** — различение «Правило ≠ Реализация правила» (DP.M.008)
 
 ## [0.14.2] — 2026-03-24
 
