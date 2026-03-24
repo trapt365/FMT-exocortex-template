@@ -290,7 +290,7 @@ done
 - [ ] open-sessions.log: строки закрытых сессий удалены
 - [ ] Captures за день применены (все Quick Close → KE пройден)
 - [ ] **Синхронизация downstream:** коммиты в Pack/DS → `update.sh` выполнен (reindex + pack-project + template)
-- [ ] **Linear sync:** статусы соответствуют git
+- [ ] **Linear sync:** статусы соответствуют git. **Пост-sync чек:** сравнить кол-во active РП в REGISTRY (незачёркнутые `🔄`+`⏳`) с кол-вом active issues в Linear (не Done/Canceled). Расхождение → ❌ и исправить до продолжения. Скрипт может упасть молча (exit 1 без вывода) — проверять результат, а не факт запуска.
 - [ ] **Repo CLAUDE.md:** feat-коммиты → новые правила?
 - [ ] **WP context:** done → `mv inbox/ → archive/wp-contexts/`
 - [ ] **Draft-list:** Pack обогащён → черновик предложен?
