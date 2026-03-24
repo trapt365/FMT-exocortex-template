@@ -28,7 +28,7 @@ IWE — это **Intellectual Work Environment**, интеллектуальна
 | Планы не работают | **Ритуалы ОРЗ + Claude Code** | Утром — план дня (автоматически). Вечером — итоги. Каждую неделю — ревью. ИИ не даёт забыть незавершённое |
 | ИИ не помогает | **Claude Code + Экзокортекс** | ИИ читает ТВОИ файлы, знает ТВОИ цели, помнит ТВОЮ историю. Это персональный ассистент, а не обезличенный чат-бот |
 
-> Подробнее о каждом сценарии: [Планирование дня](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) | [Планирование недели](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) | [Развитие и обучение](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) | [Захват знаний](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md)
+> Подробнее о каждом сценарии: [Планирование дня](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) | [Планирование недели](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) | [Развитие и обучение](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) | [Захват знаний](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md)
 
 ---
 
@@ -84,7 +84,7 @@ graph LR
 
 Это не абстрактное упражнение — ты сразу получаешь работающий план.
 
-> Подробнее: [SETUP-GUIDE.md, этап 2](SETUP-GUIDE.md)
+> Подробнее: [SETUP-GUIDE.md, этап 2](../SETUP-GUIDE.md)
 
 ### Шаг 4. Ежедневная практика (1-2 недели)
 
@@ -326,8 +326,8 @@ IWE использует конкретные концепции из систе
 
 | Ресурс | Что это | Ссылка |
 |--------|---------|--------|
-| Что такое IWE | Главное определение, архитектура, контуры | [DP.IWE.001](../../../../PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.IWE.001-intelligent-working-environment.md) |
-| Шаблон и настройка | Компоненты, роли, FAQ | [DP.IWE.002](../../../../PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md) |
+| Что такое IWE | Главное определение, архитектура, контуры | [DP.IWE.001](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/02-domain-entities/DP.IWE.001-intelligent-working-environment.md) |
+| Шаблон и настройка | Компоненты, роли, FAQ | [DP.IWE.002](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md) |
 | Принципы vs Навыки | Почему принципы важнее инструментов | [principles-vs-skills.md](../principles-vs-skills.md) |
 | Терминология | Словарь IWE | [ONTOLOGY.md](../../ONTOLOGY.md) |
 
@@ -335,10 +335,10 @@ IWE использует конкретные концепции из систе
 
 | Сценарий | Обещание | Ссылка |
 |----------|----------|--------|
-| Планирование дня | DayPlan к 08:00 с приоритетами и контекстом | [DP.SC.001](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) |
-| Планирование недели | WeekPlan + WeekReport | [DP.SC.002](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) |
-| Развитие и обучение | Q&A, проверка ДЗ, марафоны | [DP.SC.003](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) |
-| Захват знаний | Fleeting notes → Pack | [DP.SC.004](../../../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md) |
+| Планирование дня | DayPlan к 08:00 с приоритетами и контекстом | [DP.SC.001](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) |
+| Планирование недели | WeekPlan + WeekReport | [DP.SC.002](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) |
+| Развитие и обучение | Q&A, проверка ДЗ, марафоны | [DP.SC.003](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) |
+| Захват знаний | Fleeting notes → Pack | [DP.SC.004](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md) |
 
 ### Совместимость и стоимость
 
@@ -350,7 +350,7 @@ IWE использует конкретные концепции из систе
 | VS Code | Бесплатно (понадобится позже, не на старте) |
 | Нужно ли уметь программировать | Нет |
 
-> Подробнее: [PLATFORM-COMPAT.md](../PLATFORM-COMPAT.md) | [FAQ в DP.IWE.002, §11](../../../../PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md)
+> Подробнее: [PLATFORM-COMPAT.md](../PLATFORM-COMPAT.md) | [FAQ в DP.IWE.002, §11](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md)
 
 ---
 
