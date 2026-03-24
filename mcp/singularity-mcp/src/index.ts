@@ -16,7 +16,8 @@ function getToken(): string {
 
 async function apiRequest<T>(
   path: string,
-  params?: Record<string, string>
+  params?: Record<string, string>,
+  options?: { method?: string; body?: unknown }
 ): Promise<T> {
   const url = new URL(`${API_BASE}${path}`);
   if (params) {
@@ -27,11 +28,14 @@ async function apiRequest<T>(
     }
   }
 
+  const method = options?.method ?? "GET";
   const response = await fetch(url.toString(), {
+    method,
     headers: {
       Authorization: `Bearer ${getToken()}`,
       "Content-Type": "application/json",
     },
+    body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {
@@ -39,7 +43,10 @@ async function apiRequest<T>(
     throw new Error(`Singularity API ${response.status}: ${body}`);
   }
 
-  return response.json() as Promise<T>;
+  // DELETE и PATCH могут вернуть пустой ответ
+  const text = await response.text();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
 }
 
 // --- Types ---
@@ -310,6 +317,135 @@ server.tool(
 
     return {
       content: [{ type: "text" as const, text: lines.join("\n") }],
+    };
+  }
+);
+
+// Tool: create-task
+server.tool(
+  "create-task",
+  "Создать задачу в SingularityApp.",
+  {
+    title: z.string().describe("Название задачи"),
+    note: z.string().optional().describe("Заметка / описание"),
+    projectId: z.string().optional().describe("ID проекта"),
+    priority: z
+      .enum(["high", "normal", "low"])
+      .optional()
+      .describe("Приоритет: high=0, normal=1, low=2"),
+    startDate: z
+      .string()
+      .optional()
+      .describe("Дата начала ISO 8601 (например 2026-03-24T10:00:00.000Z)"),
+    deadline: z
+      .string()
+      .optional()
+      .describe("Дедлайн ISO 8601"),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe("Список тегов"),
+    useTime: z.boolean().optional().describe("Использовать временной слот"),
+    timeLength: z.number().optional().describe("Длительность в минутах"),
+  },
+  async ({ title, note, projectId, priority, startDate, deadline, tags, useTime, timeLength }) => {
+    const PRIORITY_MAP: Record<string, number> = { high: 0, normal: 1, low: 2 };
+    const body: Record<string, unknown> = { title };
+    if (note !== undefined) body.note = note;
+    if (projectId !== undefined) body.projectId = projectId;
+    if (priority !== undefined) body.priority = PRIORITY_MAP[priority];
+    if (startDate !== undefined) body.start = startDate;
+    if (deadline !== undefined) body.deadline = deadline;
+    if (tags !== undefined) body.tags = tags;
+    if (useTime !== undefined) body.useTime = useTime;
+    if (timeLength !== undefined) body.timeLength = timeLength;
+
+    const task = await apiRequest<Task>("/task", undefined, { method: "POST", body });
+    const projName = await getProjectName(task.projectId);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Задача создана (ID: ${task.id})\n\n${formatTask(task, projName)}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: update-task
+server.tool(
+  "update-task",
+  "Обновить поля задачи в SingularityApp (только переданные поля).",
+  {
+    taskId: z.string().describe("ID задачи"),
+    title: z.string().optional().describe("Новое название"),
+    note: z.string().optional().describe("Новая заметка"),
+    projectId: z.string().optional().describe("Новый ID проекта"),
+    priority: z
+      .enum(["high", "normal", "low"])
+      .optional()
+      .describe("Приоритет: high=0, normal=1, low=2"),
+    startDate: z.string().optional().describe("Новая дата начала ISO 8601"),
+    deadline: z.string().optional().describe("Новый дедлайн ISO 8601"),
+    tags: z.array(z.string()).optional().describe("Новый список тегов"),
+    useTime: z.boolean().optional().describe("Использовать временной слот"),
+    timeLength: z.number().optional().describe("Длительность в минутах"),
+  },
+  async ({ taskId, title, note, projectId, priority, startDate, deadline, tags, useTime, timeLength }) => {
+    const PRIORITY_MAP: Record<string, number> = { high: 0, normal: 1, low: 2 };
+    const body: Record<string, unknown> = {};
+    if (title !== undefined) body.title = title;
+    if (note !== undefined) body.note = note;
+    if (projectId !== undefined) body.projectId = projectId;
+    if (priority !== undefined) body.priority = PRIORITY_MAP[priority];
+    if (startDate !== undefined) body.start = startDate;
+    if (deadline !== undefined) body.deadline = deadline;
+    if (tags !== undefined) body.tags = tags;
+    if (useTime !== undefined) body.useTime = useTime;
+    if (timeLength !== undefined) body.timeLength = timeLength;
+
+    const task = await apiRequest<Task>(`/task/${taskId}`, undefined, { method: "PATCH", body });
+    const projName = await getProjectName(task.projectId);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Задача обновлена\n\n${formatTask(task, projName)}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: complete-task
+server.tool(
+  "complete-task",
+  "Отметить задачу как выполненную (checked=1) или отменённую (checked=2) в SingularityApp.",
+  {
+    taskId: z.string().describe("ID задачи"),
+    action: z
+      .enum(["complete", "cancel", "reopen"])
+      .describe("complete=выполнено, cancel=отменено, reopen=переоткрыть"),
+  },
+  async ({ taskId, action }) => {
+    const CHECKED_MAP: Record<string, number> = { complete: 1, cancel: 2, reopen: 0 };
+    const body = { checked: CHECKED_MAP[action] };
+
+    const task = await apiRequest<Task>(`/task/${taskId}`, undefined, { method: "PATCH", body });
+    const projName = await getProjectName(task.projectId);
+    const actionLabel: Record<string, string> = {
+      complete: "выполнена",
+      cancel: "отменена",
+      reopen: "переоткрыта",
+    };
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Задача ${actionLabel[action]}\n\n${formatTask(task, projName)}`,
+        },
+      ],
     };
   }
 );
