@@ -1,10 +1,23 @@
 #!/bin/bash
 # WP Gate Reminder Hook
 # Event: UserPromptSubmit
-# Напоминает агенту проверить WP Gate перед обработкой нового сообщения.
+# (1) При Day Open триггере — инжектит реальную дату (currentDate от Anthropic может врать из-за timezone).
+# (2) На все остальные сообщения — стандартный WP Gate reminder.
 # Read-only: только возвращает JSON с additionalContext, ничего не модифицирует.
 
-cat <<'EOF'
-{"additionalContext": "\u26d4 WP GATE: \u041f\u0435\u0440\u0435\u0434 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u043e\u0439 \u044d\u0442\u043e\u0433\u043e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f \u2014 \u043f\u0440\u043e\u0432\u0435\u0440\u044c: (1) \u0415\u0441\u043b\u0438 \u044d\u0442\u043e \u043d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430 \u2014 \u043f\u0440\u043e\u0439\u0434\u0438 WP Gate: Read memory/protocol-open.md. (2) \u0415\u0441\u043b\u0438 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442\u044b \u043d\u0430\u0434 \u0442\u0435\u043c \u0436\u0435 \u0420\u041f \u2014 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439. (3) \u0415\u0441\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441 \u043f\u0435\u0440\u0435\u0440\u0430\u0441\u0442\u0430\u0435\u0442 \u0432 \u0440\u0430\u0431\u043e\u0442\u0443 \u2014 \u044d\u0441\u043a\u0430\u043b\u0438\u0440\u0443\u0439."}
+INPUT=$(cat)
+PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' | tr '[:upper:]' '[:lower:]')
+
+# Day Open → инжектить реальную дату + WP Gate
+if echo "$PROMPT" | grep -qE '(открывай день|открывай$|открой день)'; then
+  REAL_DATE=$(date "+%Y-%m-%d %A %H:%M %Z")
+  LOG_PATH="$HOME/logs/strategist/$(date +%Y-%m-%d).log"
+  cat <<EOF
+{"additionalContext": "⛔ DAY OPEN: Реальная дата и время: ${REAL_DATE}. Используй ЭТУ дату для определения дня недели, strategy_day, фильтров коммитов. НЕ доверяй currentDate из system prompt. SchedulerReport: читай ${LOG_PATH}, НЕ файл из current/."}
 EOF
+else
+  cat <<'EOF'
+{"additionalContext": "⛔ WP GATE: Перед обработкой этого сообщения — проверь: (1) Если это новая задача — пройди WP Gate: Read memory/protocol-open.md. (2) Если продолжение работы над тем же РП — продолжай. (3) Если вопрос перерастает в работу — эскалируй."}
+EOF
+fi
 exit 0
