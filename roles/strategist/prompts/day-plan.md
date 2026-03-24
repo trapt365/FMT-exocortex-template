@@ -4,8 +4,8 @@
 
 ## Контекст
 
-- **WeekPlan:** /mnt/c/Users/Timur/Documents/IWE/DS-strategy/current/WeekPlan W*.md
-- **DayPlan (вчера):** /mnt/c/Users/Timur/Documents/IWE/DS-strategy/current/DayPlan *.md
+- **WeekPlan:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
+- **DayPlan (вчера):** /home/trapt22/IWE/DS-strategy/current/DayPlan *.md
 - **Day rhythm config:** /home/trapt22/.claude/projects/-mnt-c-Users-Timur-Documents-IWE/memory/day-rhythm-config.yaml
 - **Протокол:** /home/trapt22/.claude/projects/-mnt-c-Users-Timur-Documents-IWE/memory/protocol-open.md § День
 

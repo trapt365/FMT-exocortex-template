@@ -23,7 +23,7 @@
 ## Установка
 
 ```bash
-cd /mnt/c/Users/Timur/Documents/IWE/DS-exocortex/roles/synchronizer
+cd /home/trapt22/IWE/DS-exocortex/roles/synchronizer
 bash install.sh
 ```
 

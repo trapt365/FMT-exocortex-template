@@ -78,7 +78,7 @@ Level 3: DS (третьи принципы)        ← производные о
 
 | Тип знания | Куда | Когда | Через KE? |
 |------------|------|-------|-----------|
-| Правило для всех репо (1-3 строки) | `/mnt/c/Users/Timur/Documents/IWE/CLAUDE.md` | Сразу | Нет |
+| Правило для всех репо (1-3 строки) | `/home/trapt22/IWE/CLAUDE.md` | Сразу | Нет |
 | Правило для одного репо (1-3 строки) | `<repo>/CLAUDE.md` | Сразу | Нет |
 | Доменное (архитектура, паттерны) | Соответствующий Pack | Close | Да (KE) |
 | Различение, метод, FM, WP | Соответствующий Pack | Close | Да (KE) |
@@ -136,7 +136,7 @@ Level 3: DS (третьи принципы)        ← производные о
 Политика: ≤11 файлов. Справочники ≤100. Протоколы ≤150. MEMORY.md ≤100 строк (done-РП удаляются при Day Close). Кросс-системное → memory/. Системное → repo/CLAUDE.md.
 Backup на Day Close: `day-close.sh` (backup + reindex + linear sync)
 
-> **Рабочая директория:** Все сессии Claude Code открывать из `/mnt/c/Users/Timur/Documents/IWE/` (корень workspace). НЕ из sub-директорий (`DS-strategy/`, `DS-IT-systems/` и т.д.) — иначе `memory/` не резолвится. `/mnt/c/Users/Timur/Documents/IWE/memory/` — симлинк на auto-memory Claude Code.
+> **Рабочая директория:** Все сессии Claude Code открывать из `/home/trapt22/IWE/` (корень workspace). НЕ из sub-директорий (`DS-strategy/`, `DS-IT-systems/` и т.д.) — иначе `memory/` не резолвится. `/home/trapt22/IWE/memory/` — симлинк на auto-memory Claude Code.
 
 ---
 

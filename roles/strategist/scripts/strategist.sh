@@ -184,7 +184,7 @@ case "$1" in
         log "Sunday: running week review"
         run_claude "week-review"
         # Fallback push for Knowledge Index (optional, skip if repo doesn't exist)
-        KI_REPO="/mnt/c/Users/Timur/Documents/IWE/DS-Knowledge-Index-trapt365"
+        KI_REPO="/home/trapt22/IWE/DS-Knowledge-Index-trapt365"
         if [ -d "$KI_REPO/.git" ]; then
             if git -C "$KI_REPO" log --oneline -1 --since="1 hour ago" --grep="week-review" 2>/dev/null | grep -q .; then
                 git -C "$KI_REPO" push >> "$LOG_FILE" 2>&1 && log "Pushed Knowledge Index (fallback)" || log "WARN: KI push failed"

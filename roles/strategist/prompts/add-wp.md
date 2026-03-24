@@ -4,7 +4,7 @@
 
 ## Контекст
 
-- Планы: /mnt/c/Users/Timur/Documents/IWE/DS-strategy/current/
+- Планы: /home/trapt22/IWE/DS-strategy/current/
 
 ## Алгоритм
 

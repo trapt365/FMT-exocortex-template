@@ -13,7 +13,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="/home/trapt22/logs/synchronizer"
-STRATEGY_DIR="/mnt/c/Users/Timur/Documents/IWE/DS-strategy"
+STRATEGY_DIR="/home/trapt22/IWE/DS-strategy"
 REPORT_DIR="$STRATEGY_DIR/current"
 ARCHIVE_DIR="$STRATEGY_DIR/archive/scheduler-reports"
 
@@ -211,7 +211,7 @@ $warnings
 **Что делать:**
 "
         if echo "$warnings" | grep -q "push failed" 2>/dev/null; then
-            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /mnt/c/Users/Timur/Documents/IWE/DS-strategy && git pull --rebase && git push\`
+            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /home/trapt22/IWE/DS-strategy && git pull --rebase && git push\`
 "
         fi
     else

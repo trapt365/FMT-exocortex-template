@@ -1,14 +1,14 @@
 Выполни сценарий «Подготовка к сессии стратегирования» для роли Стратег (R1).
 
-Источник сценария: /mnt/c/Users/Timur/Documents/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/01-strategy-session.md
+Источник сценария: /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/01-strategy-session.md
 
 ## Контекст
 
-- **HUB (личные планы):** /mnt/c/Users/Timur/Documents/IWE/DS-strategy/current/
-- **Документы стратегии:** /mnt/c/Users/Timur/Documents/IWE/DS-strategy/docs/ (ВСЕ файлы: Strategy.md, Dissatisfactions.md, Session Agenda.md)
-- **Inbox:** /mnt/c/Users/Timur/Documents/IWE/DS-strategy/inbox/ ([fleeting-notes.md](https://github.com/trapt365/DS-strategy/blob/main/inbox/fleeting-notes.md) + свежие файлы за неделю)
-- **SPOKE (планы репо):** /mnt/c/Users/Timur/Documents/IWE/*/WORKPLAN.md
-- **Стратегические карты:** /mnt/c/Users/Timur/Documents/IWE/*/MAPSTRATEGIC.md (если есть в репо)
+- **HUB (личные планы):** /home/trapt22/IWE/DS-strategy/current/
+- **Документы стратегии:** /home/trapt22/IWE/DS-strategy/docs/ (ВСЕ файлы: Strategy.md, Dissatisfactions.md, Session Agenda.md)
+- **Inbox:** /home/trapt22/IWE/DS-strategy/inbox/ ([fleeting-notes.md](https://github.com/trapt365/DS-strategy/blob/main/inbox/fleeting-notes.md) + свежие файлы за неделю)
+- **SPOKE (планы репо):** /home/trapt22/IWE/*/WORKPLAN.md
+- **Стратегические карты:** /home/trapt22/IWE/*/MAPSTRATEGIC.md (если есть в репо)
 - **MEMORY:** ~/.claude/projects/-mnt-c-Users-Timur-Documents-IWE/memory/MEMORY.md
 
 ## Именование файлов в current/
@@ -75,7 +75,7 @@ DS-strategy/
 #### 4. Сверка со стратегией + агрегация MAPSTRATEGIC (→ блок «Стратегическая сверка»)
 
 - Прочитай `DS-strategy/docs/Strategy.md` — фокусы года, Q1 цели, приоритеты месяца
-- Прочитай `/mnt/c/Users/Timur/Documents/IWE/*/MAPSTRATEGIC.md` (если файл есть в репо)
+- Прочитай `/home/trapt22/IWE/*/MAPSTRATEGIC.md` (если файл есть в репо)
 - **Агрегируй** фазы из MAPSTRATEGIC.md → обнови секцию «Текущие фазы (MAPSTRATEGIC)» в Strategy.md
 - Обнови «Приоритеты месяца» — статусы на основе WeekReport
 - Проверь: соответствуют ли текущие РП стратегическому направлению?
@@ -83,7 +83,7 @@ DS-strategy/
 
 #### 5. Обход WORKPLAN.md (Hub-and-Spoke)
 
-- Прочитай `/mnt/c/Users/Timur/Documents/IWE/*/WORKPLAN.md` из каждого репо
+- Прочитай `/home/trapt22/IWE/*/WORKPLAN.md` из каждого репо
 - Собери все РП со статусом pending/in-progress
 - Выяви расхождения с HUB-планом
 

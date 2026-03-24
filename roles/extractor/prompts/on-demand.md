@@ -14,8 +14,8 @@
 ## Конфигурация
 
 > Перед обработкой прочитай:
-> 1. `/mnt/c/Users/Timur/Documents/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации
-> 2. `/mnt/c/Users/Timur/Documents/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
+> 1. `/home/trapt22/IWE/DS-exocortex/roles/extractor/config/routing.md` — таблицы маршрутизации
+> 2. `/home/trapt22/IWE/DS-exocortex/roles/extractor/config/feedback-log.md` — лог отклонённых кандидатов
 
 ## Алгоритм
 

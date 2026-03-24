@@ -113,9 +113,9 @@ fi
 # --- 3. Re-substitute placeholders ---
 echo "[3/6] Re-substituting placeholders..."
 
-# After merge, new lines from upstream may contain /mnt/c/Users/Timur/Documents/IWE etc.
+# After merge, new lines from upstream may contain /home/trapt22/IWE etc.
 # Detect values from the current environment
-PLACEHOLDER_COUNT=$(grep -r '/mnt/c/Users/Timur/Documents/IWE' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.plist" -l 2>/dev/null | wc -l | tr -d ' ')
+PLACEHOLDER_COUNT=$(grep -r '/home/trapt22/IWE' "$EXOCORTEX_DIR" --include="*.md" --include="*.sh" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.plist" -l 2>/dev/null | wc -l | tr -d ' ')
 
 if [ "$PLACEHOLDER_COUNT" -gt 0 ]; then
     echo "  Found $PLACEHOLDER_COUNT files with unsubstituted /c/Users/Timur/Documents/IWE"
