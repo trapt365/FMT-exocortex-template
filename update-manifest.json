@@ -1,5 +1,5 @@
 {
-  "version": "0.10.0",
+  "version": "0.16.0",
   "description": "Манифест платформенных файлов FMT-exocortex-template. Используется update.sh для доставки обновлений.",
   "files": [
     {"path": "CLAUDE.md", "desc": "Глобальные инструкции для Claude Code"},
@@ -8,6 +8,8 @@
     {"path": "REPO-TYPE.md", "desc": "Описание типа репозитория"},
     {"path": "update.sh", "desc": "Скрипт обновления (self-update)"},
     {"path": "setup.sh", "desc": "Скрипт первичной установки"},
+    {"path": ".gitignore", "desc": "Git ignore правила платформы"},
+    {"path": ".githooks/pre-commit", "desc": "Git pre-commit hook"},
 
     {"path": "memory/protocol-open.md", "desc": "Протокол открытия (сессия + день)"},
     {"path": "memory/protocol-close.md", "desc": "Протокол закрытия (Quick/Day/Week Close)"},
@@ -26,6 +28,7 @@
     {"path": "roles/strategist/prompts/evening.md", "desc": "Промпт: вечерний обзор"},
     {"path": "roles/strategist/prompts/check-plan.md", "desc": "Промпт: проверка плана"},
     {"path": "roles/strategist/prompts/add-wp.md", "desc": "Промпт: добавление РП"},
+    {"path": "roles/strategist/prompts/note-review.md", "desc": "Промпт: обзор заметок"},
     {"path": "roles/strategist/scripts/strategist.sh", "desc": "Скрипт запуска стратега"},
     {"path": "roles/strategist/scripts/fetch-wakatime.sh", "desc": "Получение метрик WakaTime"},
     {"path": "roles/strategist/scripts/cleanup-processed-notes.sh", "desc": "Очистка обработанных заметок"},
@@ -59,6 +62,7 @@
     {"path": "roles/synchronizer/scripts/templates/extractor.sh", "desc": "Шаблон: скрипт экстрактора"},
     {"path": "roles/synchronizer/scripts/templates/strategist.sh", "desc": "Шаблон: скрипт стратега"},
     {"path": "roles/synchronizer/scripts/templates/synchronizer.sh", "desc": "Шаблон: скрипт синхронизатора"},
+    {"path": "roles/synchronizer/scripts/collectors.d/README.md", "desc": "Документация формата плагинов-коллекторов"},
     {"path": "roles/synchronizer/install.sh", "desc": "Установка роли синхронизатора"},
     {"path": "roles/synchronizer/role.yaml", "desc": "Манифест роли синхронизатора"},
     {"path": "roles/synchronizer/config.yaml", "desc": "Конфигурация синхронизатора"},
@@ -88,7 +92,9 @@
     {"path": ".claude/hooks/wakatime-heartbeat.sh", "desc": "Hook: WakaTime heartbeat"},
 
     {"path": ".claude/skills/archgate/SKILL.md", "desc": "Скилл: АрхГейт (ЭМОГССБ)"},
+    {"path": ".claude/skills/day-open/SKILL.md", "desc": "Скилл: Day Open (шаблоны DayPlan/WeekPlan)"},
     {"path": ".claude/skills/fpf/SKILL.md", "desc": "Скилл: загрузка принципов FPF"},
+    {"path": ".claude/skills/iwe-rules-review/SKILL.md", "desc": "Скилл: ревью культуры работы IWE"},
     {"path": ".claude/skills/ke/SKILL.md", "desc": "Скилл: Knowledge Extraction"},
     {"path": ".claude/skills/run-protocol/SKILL.md", "desc": "Скилл: пошаговое выполнение протокола"},
     {"path": ".claude/skills/setup-wakatime/SKILL.md", "desc": "Скилл: настройка WakaTime"},
@@ -100,6 +106,10 @@
 
     {"path": "setup/validate-template.sh", "desc": "Валидация шаблона"},
     {"path": "setup/optional/setup-calendar.sh", "desc": "Подключение Google Calendar"},
+    {"path": "setup/optional/setup-cloud-scheduler.sh", "desc": "Настройка облачного планировщика"},
+    {"path": "setup/optional/setup-agent-workspace.sh", "desc": "Создание Agent Workspace"},
+    {"path": "setup/optional/generate-post-image.py", "desc": "Генерация обложек для постов"},
+    {"path": "setup/optional/COVER-IMAGES.md", "desc": "Инструкция по обложкам"},
     {"path": "setup/optional/pomodoro-alert.py", "desc": "Алерт помидорок"},
     {"path": "setup/optional/pomodoro-alert.plist", "desc": "launchd: помидорки"},
     {"path": "setup/optional/README.md", "desc": "Описание опциональных скриптов"},
@@ -118,6 +128,7 @@
     {"path": "docs/adr/ADR-002-modular-roles.md", "desc": "ADR: модульные роли"},
 
     {"path": ".github/workflows/validate-template.yml", "desc": "CI: валидация шаблона"},
-    {"path": ".github/workflows/notify-update.yml", "desc": "CI: уведомление об обновлении"}
+    {"path": ".github/workflows/notify-update.yml", "desc": "CI: уведомление об обновлении"},
+    {"path": ".github/workflows/cloud-scheduler.yml", "desc": "CI: облачный планировщик IWE"}
   ]
 }
