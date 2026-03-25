@@ -48,7 +48,7 @@
 - `DS-strategy/current/WeekPlan W*.md` — РП и приоритеты недели
 - `DS-strategy/docs/Strategy.md` — фокусы года, приоритеты месяца
 - MEMORY.md — статусы РП
-- `DS-strategy/current/unsatisfied-questions.md` — **структурированный отчёт** из feedback_triage DB (авто-классификация ботом). Замечания (✏️) и urgent (high/critical) — в начале файла. Real-time алерты уже отправлены ботом → Note-Review только проверяет кластеры (≥3 в одном кластере → пометить)
+- QA-отчёт бота: `DS-agent-workspace/scheduler/feedback-triage/` (последний по дате) или `DS-strategy/current/unsatisfied-questions.md` (если нет agent-workspace) — **структурированный отчёт** из feedback_triage DB (авто-классификация ботом). Замечания (✏️) и urgent (high/critical) — в начале файла. Real-time алерты уже отправлены ботом → Note-Review только проверяет кластеры (≥3 в одном кластере → пометить)
 
 #### 3. Классифицировать каждую заметку
 
