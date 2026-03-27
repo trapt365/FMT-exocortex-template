@@ -31,6 +31,7 @@ portable_date_offset() {
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="$HOME/IWE"
+GOVERNANCE_DIR="${GOVERNANCE_DIR:-$WORKSPACE/DS-my-strategy}"
 LOG_DIR="$HOME/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/dt-collect-$DATE.log"
@@ -376,8 +377,8 @@ print(json.dumps(result))
 # ============================================================
 
 collect_multiplier() {
-    local DAYPLAN_DIR="$WORKSPACE/DS-my-strategy/current"
-    local ARCHIVE_DIR="$WORKSPACE/DS-my-strategy/archive/day-plans"
+    local DAYPLAN_DIR="$GOVERNANCE_DIR/current"
+    local ARCHIVE_DIR="$GOVERNANCE_DIR/archive/day-plans"
 
     python3 -c "
 import json, os, re, glob
@@ -499,7 +500,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_registry() {
-    local REGISTRY="$WORKSPACE/DS-my-strategy/docs/WP-REGISTRY.md"
+    local REGISTRY="$GOVERNANCE_DIR/docs/WP-REGISTRY.md"
 
     python3 -c "
 import json, os, re
@@ -579,7 +580,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_notes() {
-    local NOTES="$WORKSPACE/DS-my-strategy/inbox/fleeting-notes.md"
+    local NOTES="$GOVERNANCE_DIR/inbox/fleeting-notes.md"
 
     python3 -c "
 import json, os, re

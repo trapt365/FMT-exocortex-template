@@ -176,7 +176,7 @@ A: В `memory/day-rhythm-config.yaml` измените `strategy_day: monday` н
 **Q: Клонирование попало в `~` вместо `~/IWE`?**
 A: Все команды установки нужно выполнять в одном терминале. Если открыли новый — он начинает из `~`. Удалите папку из `~` и повторите с `cd ~/IWE`. Подробнее: [SETUP-GUIDE.md](docs/SETUP-GUIDE.md).
 
-> Полный FAQ с подробными ответами: [DP.IWE.002 §11](https://github.com/aisystant/PACK-digital-platform/blob/main/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md#11-частые-вопросы-faq). Практический справочник: [LEARNING-PATH §11](docs/LEARNING-PATH.md#11-быстрый-справочник).
+> Полный FAQ с подробными ответами: [DP.IWE.002 §11](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/02-domain-entities/DP.IWE.002-iwe-template-and-setup.md#11-частые-вопросы-faq). Практический справочник: [LEARNING-PATH §11](docs/LEARNING-PATH.md#11-быстрый-справочник).
 
 ---
 

@@ -42,7 +42,7 @@ git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 0
 
 ### 3b. Контент-план на следующую неделю
 
-> **Источники:** Content ideas из рубежей работы (`DS-strategy/drafts/draft-list.md`), результаты прошлой недели, backlog из [Стратегии маркетинга §7](../../DS-ecosystem-development/B.Aisystant-Ecosystem/B1.Society/B1.1.Meaning/1.1.2.%20Marketing/Стратегия%20маркетинга%201.1.md).
+> **Источники:** Content ideas из рубежей работы (`DS-strategy/drafts/draft-list.md`), результаты прошлой недели, backlog из Стратегии маркетинга §7 (DS-ecosystem-development).
 
 1. Собери Content ideas, накопленные за неделю (из draft-list.md, captures, Close-отчётов)
 2. Сопоставь с backlog публикаций из Стратегии маркетинга §7
