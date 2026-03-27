@@ -79,6 +79,8 @@
 
 **Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log`: `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
 
+<!-- EXTENSION POINT: загрузить extensions/protocol-open.after.md если существует -->
+
 > Продолжение работы над тем же РП — повторный Ритуал не нужен.
 
 ---

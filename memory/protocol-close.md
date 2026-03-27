@@ -42,7 +42,7 @@
 
 0. **Pull** → `cd DS-strategy && git pull --rebase`
 1. **Commit + Push** — все изменения зафиксированы
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 2. **Статусы** (механические, пока файлы «горячие»):
    - **MEMORY.md** — обновить статус РП (одна строка: `in_progress` / `done`)
    - **DayPlan** — обновить строку **своего РП** в `DS-strategy/current/DayPlan YYYY-MM-DD.md`. **Scope:** Quick Close обновляет только РП текущей сессии. Полная актуализация всех строк — на Day Close (шаг 2b). **Правило зачёркивания:** зачеркнуть строку даже если РП остаётся in_progress (в WeekPlan он не зачёркивается, пока не done). DayPlan отражает «что сделано сегодня», WeekPlan — «что закрыто на неделе».
@@ -76,7 +76,7 @@
 ### Чеклист Quick Close
 
 - [ ] Всё закоммичено и запушено
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 - [ ] **Статусы:** MEMORY.md + DayPlan + WP-REGISTRY обновлены (сразу после commit)
 - [ ] KE выполнен, captures применены
 - [ ] Verification Gate пройден (WP + code)
@@ -110,7 +110,7 @@
 **Captures:** [N → Pack, N → DS docs/, N → IWE root]. «0» только если ничего не записано.
 **Что проверить:** [что требует внимания человека]
 **Git:** закоммичено + запушено ✅
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 **Осталось:** ничего / [что — Agent→Agent handoff для следующей сессии]
 ```
 
@@ -156,7 +156,7 @@ done
 
 **2e.** Governance-синхронизация: новые репо/сервисы за день? → REPOSITORY-REGISTRY, navigation.md, MAP.002↔PROCESSES.md.
 
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 
 #### 3. Архивация
 
@@ -226,7 +226,7 @@ done
 
 **г) Не забыто?** Стратег проверяет:
 - Незакоммиченные изменения (`git status` по всем репо)
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 - Незаписанные мысли? (спросить пользователя)
 - Обещания кому-то? (спросить пользователя)
 
@@ -306,7 +306,7 @@ done
 - [ ] **Lesson Hygiene:** уроки MEMORY.md ≤8, неактуальные → тематические файлы
 - [ ] **Draft-list:** Pack обогащён → черновик предложен?
 - [ ] **Видео:** обработанные помечены (если video.enabled)
-<!-- YOUR CUSTOM CHECKS HERE -->
+<!-- EXTENSION POINT: загрузить extensions/protocol-close.checks.md если существует -->
 - [ ] **Governance:** REPOSITORY-REGISTRY, navigation.md, MAP.002
 - [ ] **Backup:** `day-close.sh` выполнен (backup + reindex + linear)
 - [ ] **Верификация compliance:** /verify запускался сегодня?
