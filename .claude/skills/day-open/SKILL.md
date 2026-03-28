@@ -13,6 +13,8 @@ version: 1.0.0
 > **Фильтр свежести:** issues, видео, заметки — за 2 дня. Urgent — всегда.
 > **Issues — только actionable:** пропускать read-only репо (CLAUDE.md) и upstream без push-доступа (Base, чужие fork). Показывать только из репо, где пользователь может действовать.
 > **Алгоритм Day Open:** `memory/protocol-open.md § Масштаб: День`.
+> **Mandatory WPs:** если в `day-rhythm-config.yaml` есть `mandatory_daily_wps` — включить в план. Отсутствующие в WeekPlan → «Требует внимания».
+> **Close вчера:** если `day_close.review_yesterday_close: true` — начать с чтения Close прошлого дня (carry-over, незакрытые вопросы).
 > **Шаблоны:** ниже.
 
 ## Шаблон DayPlan

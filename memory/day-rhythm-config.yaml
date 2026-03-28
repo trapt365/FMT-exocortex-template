@@ -38,6 +38,15 @@ video:
   content:
     suggest_posts: true         # Suggest post ideas from transcribed videos
 
+# mandatory_daily_wps:             # WPs that MUST appear in every DayPlan
+#   - wp: 7                        # WP number (from WeekPlan)
+#     min_minutes: 30
+#   - category: content            # Or by category (content, dev, ops)
+#     min_count: 1
+
+# day_close:
+#   review_yesterday_close: false  # At Day Open, read yesterday's Close report
+
 pomodoro:
   work_minutes: 25
   break_minutes: 5
