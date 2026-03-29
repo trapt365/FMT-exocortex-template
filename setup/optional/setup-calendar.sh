@@ -98,8 +98,9 @@ echo ""
 echo "Сейчас откроется браузер для входа в Google."
 echo "Войдите в свой аккаунт и нажмите «Разрешить»."
 echo ""
-echo "⚠ Google может показать предупреждение «This app isn't verified»."
-echo "  Это нормально — нажмите «Advanced» → «Go to IWE (unsafe)»."
+echo "⚠ Google покажет предупреждение «This app isn't verified»."
+echo "  Это нормально — нажмите «Advanced» → «Go to IWE MIM (unsafe)» → «Allow»."
+echo "  Приложение безопасное, просто не проходило верификацию Google (не нужна до 100 пользователей)."
 echo ""
 read -p "Готовы? (Enter для продолжения) " -r
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validate Template — проверка целостности DS-exocortex
+# Validate Template — проверка целостности FMT-exocortex-template
 #
 # 5 проверок:
 # 1. Нет автор-специфичного контента
@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="${1:-$HOME/IWE/DS-exocortex}"
+TEMPLATE_DIR="${1:-$HOME/IWE/FMT-exocortex-template}"
 FAIL=0
 
 echo "=== Validating: $TEMPLATE_DIR ==="
@@ -49,12 +49,15 @@ echo -n "[2/5] Hardcoded /Users/ paths... "
 count=$(grep -rn '/Users/' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
         --include="*.json" --include="*.plist" \
         --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
-        | grep -v '/Users/\.\.\./' | wc -l | tr -d ' ' || true)
+        | grep -v '/Users/\.\.\./' \
+        | grep -v '# .*\(/Users/\|e\.g\.\)' \
+        | wc -l | tr -d ' ' || true)
 if [ "$count" -gt 0 ]; then
     echo "FAIL ($count hits)"
     grep -rn '/Users/' "$TEMPLATE_DIR" --include="*.md" --include="*.sh" \
         --exclude='validate-template.sh' --exclude='setup.sh' 2>/dev/null \
-        | grep -v '/Users/\.\.\./' | head -3 || true
+        | grep -v '/Users/\.\.\./' \
+        | grep -v '# .*\(/Users/\|e\.g\.\)' | head -3 || true
     FAIL=1
 else
     echo "PASS"
@@ -105,6 +108,7 @@ for f in CLAUDE.md ONTOLOGY.md README.md \
          memory/MEMORY.md memory/hard-distinctions.md \
          memory/protocol-open.md memory/protocol-close.md \
          memory/navigation.md \
+         .claude/skills/day-open/SKILL.md \
          roles/strategist/scripts/strategist.sh; do
     if [ ! -f "$TEMPLATE_DIR/$f" ]; then
         echo ""
