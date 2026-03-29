@@ -236,12 +236,12 @@ server.tool(
     const lines: string[] = [`## Проекты (${projects.length})\n`];
     for (const root of rootProjects) {
       const emoji = root.emoji ? `${root.emoji} ` : "";
-      lines.push(`- ${emoji}**${root.title}**`);
+      lines.push(`- ${emoji}**${root.title}** (id: ${root.id})`);
       const children = childMap.get(root.id) ?? [];
       children.sort((a, b) => a.parentOrder - b.parentOrder);
       for (const child of children) {
         const ce = child.emoji ? `${child.emoji} ` : "";
-        lines.push(`  - ${ce}${child.title}`);
+        lines.push(`  - ${ce}${child.title} (id: ${child.id})`);
       }
     }
 
@@ -444,6 +444,26 @@ server.tool(
         {
           type: "text" as const,
           text: `✅ Задача ${actionLabel[action]}\n\n${formatTask(task, projName)}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: delete-task
+server.tool(
+  "delete-task",
+  "Удалить задачу из SingularityApp по ID. Необратимое действие.",
+  {
+    taskId: z.string().describe("ID задачи"),
+  },
+  async ({ taskId }) => {
+    await apiRequest<Record<string, never>>(`/task/${taskId}`, undefined, { method: "DELETE" });
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Задача удалена (ID: ${taskId})`,
         },
       ],
     };
