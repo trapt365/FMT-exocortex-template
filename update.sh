@@ -64,7 +64,7 @@ WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
 
 # === Temp directory ===
 TMPDIR_UPDATE=$(mktemp -d 2>/dev/null || { mkdir -p "/tmp/exocortex-update-$$"; echo "/tmp/exocortex-update-$$"; })
-trap "rm -rf '$TMPDIR_UPDATE'" EXIT
+trap 'rm -rf "$TMPDIR_UPDATE"' EXIT
 
 echo "=========================================="
 echo "  Exocortex Update v$VERSION"
@@ -401,6 +401,7 @@ echo ""
 echo "Обновление platform-space..."
 
 # Copy CLAUDE.md to workspace root
+# shellcheck disable=SC2034 # used by extensions
 CLAUDE_UPDATED=false
 for f in "${NEW_FILES[@]}" "${UPDATED_FILES[@]}"; do
     if [ "$f" = "CLAUDE.md" ]; then

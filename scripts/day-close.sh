@@ -22,6 +22,7 @@ MEMORY_IWE="$WORKSPACE_DIR/memory"
 EXOCORTEX_DST="$DS_STRATEGY/exocortex"
 SELECTIVE_REINDEX="$WORKSPACE_DIR/DS-exocortex/roles/synchronizer/scripts/selective-reindex.sh"
 LINEAR_SYNC="$WORKSPACE_DIR/DS-exocortex/roles/synchronizer/scripts/linear-sync.sh"
+# shellcheck disable=SC2034 # used by extensions
 FETCH_WAKATIME="$WORKSPACE_DIR/DS-exocortex/roles/strategist/scripts/fetch-wakatime.sh"
 ENV_FILE="$HOME/.config/aist/env"
 LOG_FILE="$DS_STRATEGY/inbox/day-close.log"
@@ -142,6 +143,7 @@ do_wakatime() {
 
   # Загружаем env с ключами
   if [ -f "$ENV_FILE" ]; then
+    # shellcheck disable=SC1090
     set -a; source "$ENV_FILE"; set +a
   fi
 
