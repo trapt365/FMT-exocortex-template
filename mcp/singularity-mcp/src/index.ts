@@ -106,7 +106,7 @@ function formatTask(task: Task, projectName?: string): string {
   const priority = PRIORITY_LABELS[task.priority] ?? `${task.priority}`;
   const status = task.checked != null ? (CHECK_LABELS[task.checked] ?? `${task.checked}`) : "не выполнено";
 
-  parts.push(`**${task.title}**`);
+  parts.push(`**${task.title}** (id: ${task.id})`);
   parts.push(`  Статус: ${status} | Приоритет: ${priority}`);
 
   if (projectName) parts.push(`  Проект: ${projectName}`);
