@@ -385,6 +385,13 @@ done
 
 Запустить `/iwe-rules-review` → отчёт → согласование → обновление DP.M.008 + реализаций.
 
+#### 3b. Staging-канал (промоция в шаблон)
+
+Открыть `DS-ecosystem-development/C.IT-Platform/C2.IT-Platform/C2.3.Operations/IWE-staging.md`:
+- Есть строки со статусом `validated`? → выполнить чеклист промоции (убрать авторские константы → FMT-exocortex-template → commit `feat: promote S-NN`)
+- Нет `validated` → просмотреть `testing`: критерий выполнен? → сменить статус на `validated` (промоция на следующей неделе)
+- Добавить новые кандидаты если появились за неделю
+
 #### 4. Аудит memory-файлов
 
 - ≤11 файлов? Лишние → объединить или удалить
