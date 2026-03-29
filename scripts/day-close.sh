@@ -17,10 +17,11 @@ set -euo pipefail
 # === КОНФИГУРАЦИЯ (настроить при установке) ===
 WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/IWE}"
 DS_STRATEGY="$WORKSPACE_DIR/DS-strategy"
-MEMORY_SRC="$HOME/.claude/projects/-home-$(whoami)-IWE/memory"
+MEMORY_AUTO="$HOME/.claude/projects/-home-$(whoami)-IWE/memory"
+MEMORY_IWE="$WORKSPACE_DIR/memory"
 EXOCORTEX_DST="$DS_STRATEGY/exocortex"
-SELECTIVE_REINDEX="$WORKSPACE_DIR/DS-MCP/knowledge-mcp/scripts/selective-reindex.sh"
-LINEAR_SYNC="$WORKSPACE_DIR/DS-IT-systems/DS-ai-systems/synchronizer/scripts/linear-sync.sh"
+SELECTIVE_REINDEX="$WORKSPACE_DIR/DS-exocortex/roles/synchronizer/scripts/selective-reindex.sh"
+LINEAR_SYNC="$WORKSPACE_DIR/DS-exocortex/roles/synchronizer/scripts/linear-sync.sh"
 FETCH_WAKATIME="$WORKSPACE_DIR/DS-exocortex/roles/strategist/scripts/fetch-wakatime.sh"
 ENV_FILE="$HOME/.config/aist/env"
 LOG_FILE="$DS_STRATEGY/inbox/day-close.log"
@@ -38,33 +39,48 @@ err() { echo -e "${RED}[day-close]${NC} $1" >&2; }
 
 # --- Шаг 1: Backup memory/ + CLAUDE.md → exocortex/ ---
 do_backup() {
-  log "Шаг 1/3: Backup memory/ → exocortex/"
-
-  if [ ! -d "$MEMORY_SRC" ]; then
-    err "Memory source not found: $MEMORY_SRC"
-    return 1
-  fi
+  log "Шаг 1/4: Backup memory/ → exocortex/"
 
   mkdir -p "$EXOCORTEX_DST"
 
   local count=0
-  for f in "$MEMORY_SRC"/*.md "$MEMORY_SRC"/*.yaml "$MEMORY_SRC"/*.yml; do
-    [ -f "$f" ] || continue
-    cp "$f" "$EXOCORTEX_DST/"
-    count=$((count + 1))
-  done
 
+  # 1) IWE memory (протоколы, навигация, различения — 16+ файлов)
+  if [ -d "$MEMORY_IWE" ]; then
+    for f in "$MEMORY_IWE"/*.md "$MEMORY_IWE"/*.yaml "$MEMORY_IWE"/*.yml; do
+      [ -f "$f" ] || continue
+      cp "$f" "$EXOCORTEX_DST/"
+      count=$((count + 1))
+    done
+    log "  IWE memory: скопировано из $MEMORY_IWE"
+  else
+    warn "  IWE memory не найден: $MEMORY_IWE"
+  fi
+
+  # 2) Claude Code auto-memory (MEMORY.md, user-profile, etc.)
+  if [ -d "$MEMORY_AUTO" ]; then
+    for f in "$MEMORY_AUTO"/*.md "$MEMORY_AUTO"/*.yaml "$MEMORY_AUTO"/*.yml; do
+      [ -f "$f" ] || continue
+      cp "$f" "$EXOCORTEX_DST/"
+      count=$((count + 1))
+    done
+    log "  Auto-memory: скопировано из $MEMORY_AUTO"
+  else
+    warn "  Auto-memory не найден: $MEMORY_AUTO"
+  fi
+
+  # 3) Root CLAUDE.md
   if [ -f "$WORKSPACE_DIR/CLAUDE.md" ]; then
     cp "$WORKSPACE_DIR/CLAUDE.md" "$EXOCORTEX_DST/CLAUDE.md"
     count=$((count + 1))
   fi
 
-  log "  Скопировано: $count файлов → $EXOCORTEX_DST/"
+  log "  Итого: $count файлов → $EXOCORTEX_DST/"
 }
 
 # --- Шаг 2: Knowledge-MCP reindex ---
 do_reindex() {
-  log "Шаг 2/3: Knowledge-MCP reindex"
+  log "Шаг 2/4: Knowledge-MCP reindex"
 
   if [ ! -x "$SELECTIVE_REINDEX" ]; then
     warn "  selective-reindex.sh не найден: $SELECTIVE_REINDEX — пропуск"
@@ -95,7 +111,7 @@ do_reindex() {
 
 # --- Шаг 3: Linear sync ---
 do_linear() {
-  log "Шаг 3/3: Linear sync"
+  log "Шаг 3/4: Linear sync"
 
   if [ ! -x "$LINEAR_SYNC" ]; then
     warn "  linear-sync.sh не найден: $LINEAR_SYNC — пропуск"
