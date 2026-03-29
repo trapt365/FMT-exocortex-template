@@ -5,6 +5,14 @@ All notable changes to DS-exocortex will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] — 2026-03-29
+
+### Fixed
+- **day-close.sh backup** — копирование из обоих memory-директорий (IWE memory + Claude auto-memory). Было 5 файлов → 21 файл
+- **day-close.sh пути зависимостей** — selective-reindex.sh и linear-sync.sh перенесены на DS-exocortex
+- **note-review.md** — восстановлен (удалён по ошибке в 631c97b, 14 мар). Восстановлен 26 мар, работает через scheduler
+- **MEMORY_SRC путь** — исправлен для WSL (-Users- → -home-)
+
 ## [0.10.0] — 2026-03-19
 
 ### Changed
