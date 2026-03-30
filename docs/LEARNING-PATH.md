@@ -361,7 +361,7 @@ PACK-{область}/             ← Твои доменные знания
 | Marp | Инструмент | VS Code extension + CLI | Markdown → слайды | Слайдоменты (PDF/HTML) |
 | Cloud Scheduler | Автоматика | `setup/optional/setup-cloud-scheduler.sh` | IWE работает 24/7 при выключенном Mac | Backup, health check, уведомления |
 
-**Cloud Scheduler — облачная автоматика IWE:** GitHub Actions workflow запускает backup и health check ежедневно в 04:00 MSK — даже если Mac выключен. Базовый уровень ($0/мес, без LLM). Опционально: Telegram-уведомления с отчётом. Установка: `bash setup/optional/setup-cloud-scheduler.sh`. Подробности: `setup/optional/README.md`, сценарий [DP.SC.019](../../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.019-autonomous-cloud-runtime.md).
+**Cloud Scheduler — облачная автоматика IWE:** GitHub Actions workflow запускает backup и health check ежедневно в 04:00 MSK — даже если Mac выключен. Базовый уровень ($0/мес, без LLM). Опционально: Telegram-уведомления с отчётом. Установка: `bash setup/optional/setup-cloud-scheduler.sh`. Подробности: `setup/optional/README.md`, сценарий [DP.SC.019](../../PACK-digital-platform/pack/digital-platform/08-service-clauses/DP.SC.019-autonomous-cloud-runtime.md).
 
 **Настройка Health Check (расширенный):** По умолчанию health check проверяет только strategy-репо. Для мульти-репо мониторинга:
 1. GitHub → Settings → Variables → Actions → добавьте `HEALTH_CHECK_REPOS` — список ваших репо через запятую (`owner/repo, owner/repo2`)

@@ -137,25 +137,27 @@ already_ran_today() {
 }
 
 # File-based lock to prevent concurrent execution (RunAtLoad + CalendarInterval race)
+# mkdir — атомарная операция на POSIX, исключает TOCTOU race condition
 LOCK_DIR="$LOG_DIR/locks"
 mkdir -p "$LOCK_DIR"
 
 acquire_lock() {
     local scenario="$1"
-    local lockfile="$LOCK_DIR/${scenario}.${DATE}.lock"
-    if [ -f "$lockfile" ]; then
+    local lockdir="$LOCK_DIR/${scenario}.${DATE}.lck"
+    if ! mkdir "$lockdir" 2>/dev/null; then
         local pid
-        pid=$(cat "$lockfile" 2>/dev/null)
+        pid=$(cat "$lockdir/pid" 2>/dev/null)
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
             log "SKIP: $scenario already running (PID $pid)"
             exit 2  # non-zero → scheduler won't mark_done
         else
-            log "WARN: removing stale lock (PID $pid no longer exists): $lockfile"
-            rm -f "$lockfile"
+            log "WARN: removing stale lock (PID $pid no longer exists): $lockdir"
+            rm -rf "$lockdir"
+            mkdir "$lockdir" || { log "ERROR: failed to acquire lock for $scenario"; exit 1; }
         fi
     fi
-    echo $$ > "$lockfile"
-    trap 'rm -f "$lockfile" 2>/dev/null' EXIT
+    echo $$ > "$lockdir/pid"
+    trap 'rm -rf "$lockdir" 2>/dev/null' EXIT
 }
 
 # Читаем strategy_day из конфига (L4 Personal)

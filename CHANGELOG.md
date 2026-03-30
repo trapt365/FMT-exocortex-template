@@ -262,7 +262,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **[update-manifest.json](update-manifest.json)** — манифест всех платформенных файлов (100+ записей) с описаниями. Используется update.sh для доставки обновлений
-- **[DP.SC.019](../PACK-digital-platform/pack/digital-platform/08-use-cases/DP.SC.019-template-update.md)** — сценарий «Обновление экзокортекса» + сервис S50 Template Update в MAP.002
+- **[DP.SC.019](../PACK-digital-platform/pack/digital-platform/08-service-clauses/DP.SC.019-template-update.md)** — сценарий «Обновление экзокортекса» + сервис S50 Template Update в MAP.002
 - **Инструкция «настрой календарь»** в CLAUDE.md — при запросе пользователя Claude запускает `setup-calendar.sh`
 
 ## [0.10.0] — 2026-03-19

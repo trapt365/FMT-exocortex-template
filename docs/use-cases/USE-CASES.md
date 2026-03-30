@@ -2,7 +2,7 @@
 
 > **Что здесь:** Полный каталог того, что IWE умеет делать для тебя. Каждый сценарий — это обещание платформы: конкретная ценность, которую ты получаешь.
 >
-> **Source-of-truth:** [PACK-digital-platform/08-use-cases/](../../../PACK-digital-platform/pack/digital-platform/08-use-cases/) — доменные сценарии. Этот файл — проекция для пользователя.
+> **Source-of-truth:** [PACK-digital-platform/08-service-clauses/](../../../PACK-digital-platform/pack/digital-platform/08-service-clauses/) — доменные сценарии. Этот файл — проекция для пользователя.
 
 ---
 
@@ -238,5 +238,5 @@
 
 ---
 
-*Source-of-truth: PACK-digital-platform/pack/digital-platform/08-use-cases/*
+*Source-of-truth: PACK-digital-platform/pack/digital-platform/08-service-clauses/*
 *Обновлено: 2026-03-17*

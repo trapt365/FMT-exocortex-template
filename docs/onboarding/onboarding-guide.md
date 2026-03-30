@@ -45,7 +45,7 @@ IWE — операционная система интеллектуальной
 | Не знаю, куда расти | **Модель мастерства** | Чёткая траектория: от новичка до эксперта. Каждый тир — конкретные навыки и результаты |
 | Один на один с проблемами | **Сообщество** | Среда созидателей: обмен опытом, ревью, поддержка |
 
-> Подробнее о каждом сценарии: [Планирование дня](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) | [Планирование недели](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) | [Развитие и обучение](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) | [Захват знаний](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md)
+> Подробнее о каждом сценарии: [Планирование дня](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.001-daily-planning.md) | [Планирование недели](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.002-weekly-planning.md) | [Развитие и обучение](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.003-learning-and-development.md) | [Захват знаний](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.004-knowledge-capture.md)
 
 ---
 
@@ -392,10 +392,10 @@ IWE использует конкретные концепции из теори
 
 | Сценарий | Обещание | Ссылка |
 |----------|----------|--------|
-| Планирование дня | DayPlan к 08:00 с приоритетами и контекстом | [DP.SC.001](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.001-daily-planning.md) |
-| Планирование недели | WeekPlan (с секцией «Итоги W{N}») | [DP.SC.002](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.002-weekly-planning.md) |
-| Развитие и обучение | Q&A, проверка ДЗ, марафоны | [DP.SC.003](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.003-learning-and-development.md) |
-| Захват знаний | Fleeting notes → Pack | [DP.SC.004](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-use-cases/DP.SC.004-knowledge-capture.md) |
+| Планирование дня | DayPlan к 08:00 с приоритетами и контекстом | [DP.SC.001](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.001-daily-planning.md) |
+| Планирование недели | WeekPlan (с секцией «Итоги W{N}») | [DP.SC.002](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.002-weekly-planning.md) |
+| Развитие и обучение | Q&A, проверка ДЗ, марафоны | [DP.SC.003](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.003-learning-and-development.md) |
+| Захват знаний | Fleeting notes → Pack | [DP.SC.004](https://github.com/TserenTserenov/PACK-digital-platform/blob/main/pack/digital-platform/08-service-clauses/DP.SC.004-knowledge-capture.md) |
 
 ### Совместимость и стоимость
 
