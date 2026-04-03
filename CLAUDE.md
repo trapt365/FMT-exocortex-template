@@ -63,6 +63,7 @@
 | Документ/чеклист | `memory/checklists.md` |
 
 Политика: ≤11 файлов. Справочники ≤100 строк. Протоколы ≤150. MEMORY.md ≤100 строк.
+Temporal metadata: `valid_from: YYYY-MM-DD` (обязательно при создании), `superseded_by: <файл>` (при устаревании). Подробности → `protocol-work.md § 2`.
 Рабочая директория: `{{WORKSPACE_DIR}}/` (не из sub-директорий). `{{WORKSPACE_DIR}}/memory/` = симлинк на auto-memory.
 
 ## 5. АрхГейт — ОБЯЗАТЕЛЬНАЯ оценка
@@ -134,8 +135,8 @@
 ### Extensions Gate (БЛОКИРУЮЩЕЕ)
 
 **Кастомизация протоколов/скиллов → ТОЛЬКО в `extensions/*.md`.**
-Прямое редактирование `.claude/skills/` или `memory/protocol-*.md` = ошибка: сотрётся при `update.sh`.
-Авторское → `extensions/`. Платформенное → `FMT-exocortex-template`, затем `update.sh`.
+Прямое редактирование `.claude/skills/` или `memory/protocol-*.md` = ошибка.
+**Архитектурное обоснование:** платформенные файлы (L1) и пользовательские расширения (L3) -- разные слои. Смешение слоёв = хрупкость при обновлении (3-way merge не может отличить платформенное от пользовательского внутри одного файла). Разделение: платформенное → `FMT-exocortex-template` → `update.sh`. Пользовательское → `extensions/` + `params.yaml`.
 
 
 ### README.md (FMT-exocortex-template)
