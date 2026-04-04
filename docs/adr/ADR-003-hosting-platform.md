@@ -66,7 +66,7 @@ Git = хранилище и история             Git = хранилище 
 |---------|------------|---------------------|-------------|
 | **T1** | git + CLAUDE.md + memory. LLM через платформу | Шаги 1-3 (placeholders, CLAUDE.md, memory) | ≤15 мин |
 | **T2** | + ритуалы ОРЗ + extensions/ + params.yaml | + шаг 4b (skills, hooks) + шаг 6 (DS-strategy) | +30 мин |
-| **T3** | + Pack + ЦД (через бота). Требует ORY_TOKEN | + инструкции по Pack + бот-онбординг | +1h |
+| **T3** | + Pack + ЦД (через бота) | + инструкции по Pack + бот-онбординг | +1h |
 | **T4 Direct** | + роли + MCP + launchd (требует свой API-ключ) | + шаг 5 (роли, автоматизация) | +1h |
 | **T4 Gateway** | + роли + Gateway URL + GitHub OAuth (без CLI) | + GitHub OAuth + MCP-коннектор | +30 мин |
 
@@ -82,7 +82,6 @@ bash setup.sh \
   --level=T1 \
   --yes \
   GITHUB_USER=alice \
-  EXOCORTEX_REPO=my-exocortex \
   WORKSPACE_DIR=/home/alice/IWE
 
 # Обновление

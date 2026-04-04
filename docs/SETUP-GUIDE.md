@@ -230,7 +230,6 @@ bash setup.sh
 | Вопрос | Что ввести | Пример |
 |--------|-----------|--------|
 | GitHub username | Твой логин на GitHub | `ivan-petrov` |
-| Имя экзокортекс-репо | Название твоего репо | `DS-exocortex` (по умолчанию) |
 | Workspace directory | Рабочая папка | Просто нажми Enter (определяется автоматически) |
 | Claude CLI path | Путь к claude | Просто нажми Enter (определяется автоматически) |
 | Strategist launch hour (UTC) | Час запуска Стратега | `4` (= 7:00 MSK, 8:00 Алматы) |
@@ -269,44 +268,14 @@ MCP (Model Context Protocol) -- это доступ Claude Code к базе зн
 
 > **Зачем:** Документация и Pack-сущности (DP.IWE.001, DP.ARCH.001 и др.) ссылаются на source-of-truth в PACK-digital-platform. После подключения MCP Claude сможет находить эти сущности по запросу. Без MCP -- сущности доступны только как файлы на GitHub.
 
-**Способ подключения зависит от уровня:**
-
-#### T3: Cloud MCP (через claude.ai)
+**Подключение:**
 
 1. Открой https://claude.ai/settings/connectors
 2. Добавь MCP-сервер: `https://knowledge-mcp.aisystant.workers.dev/mcp`
 3. Добавь MCP-сервер: `https://digital-twin-mcp.aisystant.workers.dev/mcp`
 4. Перезапусти Claude Code
 
-#### T4 Direct: Локальные MCP-серверы
-
-При установке `setup.sh --level=T4 --mode=direct` файл `.mcp.json` создаётся автоматически. MCP-серверы запускаются локально через `npx`.
-
-**Переменные в `.exocortex.env`** (заполняются при setup или вручную):
-
-| Переменная | Что | Когда нужна |
-|-----------|-----|-------------|
-| `KNOWLEDGE_MCP_PACKAGE` | npm-пакет knowledge-mcp | Всегда (T4) |
-| `KNOWLEDGE_MCP_DATABASE_URL` | PostgreSQL для индекса знаний | Если свой индекс |
-| `DIGITAL_TWIN_MCP_PACKAGE` | npm-пакет digital-twin-mcp | Всегда (T4) |
-| `DIGITAL_TWIN_DATABASE_URL` | PostgreSQL для цифрового двойника | Если свой ЦД |
-| `ORY_TOKEN` | Токен платформы (авторизация) | T3+ |
-
-**Как работает:** Claude Code читает `.mcp.json` при старте, запускает MCP-серверы как дочерние процессы. Серверы подключаются к базам данных и предоставляют инструменты (`search`, `get_document`, `knowledge_feedback`).
-
-#### T4 Gateway: Через платформу (без CLI)
-
-При установке `setup.sh --level=T4 --mode=gateway` MCP-серверы работают на платформе. Пользователю не нужен `npx`, Node.js или локальные базы данных.
-
-**Переменные в `.exocortex.env`:**
-
-| Переменная | Что |
-|-----------|-----|
-| `GATEWAY_URL` | URL Gateway (по умолчанию `https://mcp.aisystant.com`) |
-| `GITHUB_TOKEN` | GitHub OAuth для автоматического форка шаблона |
-| `ORY_TOKEN` | Токен платформы |
-
-**Как подключить:** Gateway URL вводится в любой AI-чат (Claude, ChatGPT, Cursor) как MCP endpoint. Платформа маршрутизирует запросы к нужным MCP-серверам.
+**Как работает:** Claude Code подключается к MCP-серверам платформы через claude.ai connectors. Серверы предоставляют инструменты (`search`, `get_document`, `knowledge_feedback`).
 
 #### Проверка
 
@@ -324,13 +293,11 @@ bash FMT-exocortex-template/setup.sh --validate
 
 | Проблема | Решение |
 |----------|---------|
-| `/mcp` -- серверов нет | T3: повтори шаги 1-4 (claude.ai connectors). T4: проверь `.mcp.json` и `.exocortex.env` |
-| `knowledge-mcp` -- connection error | Проверь `KNOWLEDGE_MCP_DATABASE_URL` в `.exocortex.env`. Для cloud: проверь интернет |
-| `ORY_TOKEN` -- 401 | Токен истёк. Обнови через бота или личный кабинет платформы |
+| `/mcp` -- серверов нет | Повтори шаги 1-4 (claude.ai connectors) |
+| `knowledge-mcp` -- connection error | Проверь интернет-соединение |
 | `--validate` показывает ошибки | Следуй подсказкам. Недостающие ключи -- заполни в `.exocortex.env` |
-| Gateway недоступен | Проверь `GATEWAY_URL`. По умолчанию: `https://mcp.aisystant.com/health` |
 
-> **Подсказка:** `setup.sh --validate` проверяет ВСЕ категории сразу: env-конфиг, обязательные файлы, extensions, MCP-доступность. Запускай после любых изменений в `.exocortex.env`.
+> **Подсказка:** `setup.sh --validate` проверяет ВСЕ категории сразу: env-конфиг, обязательные файлы, extensions, MCP-доступность.
 
 ### 1.4 Установка дополнительных ролей (позже)
 
