@@ -44,3 +44,11 @@ capture_autonomy: propose
 
 # Директория с пользовательскими расширениями протоколов
 extensions_dir: extensions
+
+# === Автор шаблона ===
+
+# Авторский режим: разрешает прямое редактирование L1 файлов (protocol-*, skills/)
+# Включать ТОЛЬКО если вы — автор шаблона (source-of-truth в вашем IWE,
+# пропагация в FMT через template-sync.sh)
+# Для обычных пользователей: false (кастомизация только через extensions/)
+author_mode: false
