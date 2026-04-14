@@ -7,6 +7,8 @@
     {"path": ".claude/hooks/precompact-checkpoint.sh"},
     {"path": ".claude/hooks/protocol-completion-reminder.sh"},
     {"path": ".claude/hooks/wakatime-heartbeat.sh"},
+    {"path": ".claude/hooks/protocol-artifact-validate.sh"},
+    {"path": ".claude/hooks/protocol-stop-gate.sh"},
     {"path": ".claude/hooks/wp-gate-reminder.sh"},
     {"path": ".claude/rules/distinctions.md", "desc": "Ключевые различения терминов IWE"},
     {"path": ".claude/rules/formatting.md", "desc": "Правила форматирования ответов"},

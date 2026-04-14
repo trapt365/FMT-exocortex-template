@@ -23,7 +23,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-WORKSPACE = Path.home() / "IWE" / "DS-my-strategy"
+WORKSPACE = Path.home() / "IWE" / "DS-strategy"
 FLEETING = WORKSPACE / "inbox" / "fleeting-notes.md"
 ARCHIVE = WORKSPACE / "archive" / "notes" / "Notes-Archive.md"
 

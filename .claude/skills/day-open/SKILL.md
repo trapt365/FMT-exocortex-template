@@ -41,7 +41,7 @@ Fallback: файла нет → пропустить, работать из ко
 **Только actionable:** пропускать read-only и upstream без push-доступа.
 
 ### 1c. Заметки
-`DS-my-strategy/inbox/fleeting-notes.md` → категоризация: → РП / → Backlog / → Контент / → Pack / → Обсудить / → Шум. НЕ удалять.
+`DS-strategy/inbox/fleeting-notes.md` → категоризация: → РП / → Backlog / → Контент / → Pack / → Обсудить / → Шум. НЕ удалять.
 **Carry-over заметок из вчерашнего DayPlan:** проверить по git log (`note-review`), были ли обработаны. Если да → секция «Разбор заметок» = «все обработаны» (с ссылкой на коммит). Не переносить обработанные заметки как carry-over.
 
 ### 2. План на сегодня
@@ -62,7 +62,7 @@ Fallback: файла нет → пропустить, работать из ко
 Mandatory РП отсутствуют в WeekPlan → «Требует внимания».
 
 ### 3. Саморазвитие
-Руководство, где остановился, черновики (`DS-my-strategy/drafts/`).
+Руководство, где остановился, черновики (`DS-strategy/drafts/`).
 
 ### 4. Стратегирование
 Если strategy_day → DayPlan НЕ создавать, план в WeekPlan. Пропустить шаг 7.
@@ -114,7 +114,7 @@ Scout report. Не проревьюен → «Требует внимания».
 Проверить: `ls extensions/day-open.after.md`. Если существует → `Read extensions/day-open.after.md` → выполнить содержимое (smoke-тесты, Scout gate, доп. проверки). Не существует → пропустить.
 
 ### 7. Запись
-**7a.** Записать DayPlan: `DS-my-strategy/current/DayPlan YYYY-MM-DD.md` по шаблону ниже. Предыдущий → `archive/day-plans/`.
+**7a.** Записать DayPlan: `DS-strategy/current/DayPlan YYYY-MM-DD.md` по шаблону ниже. Предыдущий → `archive/day-plans/`.
 **7b.** Проверить: `ls extensions/day-open.checks.md`. Если существует → `Read extensions/day-open.checks.md` → выполнить верификацию. БЛОКИРУЮЩЕЕ: commit запрещён до прохождения checks.
 **7c.** `git commit` + `git push`.
 **7d.** Compact dashboard → вывести в VS Code по шаблону ниже.
