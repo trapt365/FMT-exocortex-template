@@ -36,15 +36,11 @@ jobs:
           FAIL=0
           for pattern in "tserentserenov" "PACK-MIM" "aist_bot_newarchitecture" "DS-Knowledge-Index-Tseren"; do
             count=$(grep -rn "$pattern" . --include="*.md" --include="*.sh" \
-                    --include="*.json" --include="*.plist" --include="*.yaml" \
-                    --exclude='validate-template.sh' 2>/dev/null \
-                    | grep -v 'github.com/' | wc -l)
+                    --include="*.json" --include="*.plist" --include="*.yaml" 2>/dev/null | wc -l)
             if [ "$count" -gt 0 ]; then
               echo "FAIL: Found '$pattern' in $count locations:"
               grep -rn "$pattern" . --include="*.md" --include="*.sh" \
-                  --include="*.json" --include="*.plist" \
-                  --exclude='validate-template.sh' 2>/dev/null \
-                  | grep -v 'github.com/' | head -5
+                  --include="*.json" --include="*.plist" 2>/dev/null | head -5
               FAIL=1
             fi
           done
@@ -112,7 +108,7 @@ jobs:
       # 5. MCP — серверы подключаются через claude.ai/settings/connectors (не локально)
       - name: Check MCP documentation
         run: |
-          # MCP servers (knowledge-mcp, ddt) are managed through claude.ai connectors
+          # MCP Gateway (iwe-knowledge at mcp.aisystant.com/mcp) is managed through claude.ai connectors
           # Validate that setup.sh contains instructions for users
           if grep -q "claude.ai/settings/connectors" setup.sh; then
             echo "PASS: setup.sh contains MCP connector instructions"

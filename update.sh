@@ -64,7 +64,7 @@ WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
 
 # === Temp directory ===
 TMPDIR_UPDATE=$(mktemp -d 2>/dev/null || { mkdir -p "/tmp/exocortex-update-$$"; echo "/tmp/exocortex-update-$$"; })
-trap 'rm -rf "$TMPDIR_UPDATE"' EXIT
+trap "rm -rf '$TMPDIR_UPDATE'" EXIT
 
 echo "=========================================="
 echo "  Exocortex Update v$VERSION"
@@ -203,7 +203,7 @@ echo "  ✓ memory/MEMORY.md (личная оперативная память)"
 echo "  ✓ CLAUDE.md (3-way merge: ваши правки сохраняются)"
 echo "  ✓ extensions/ (ваши расширения протоколов)"
 echo "  ✓ params.yaml (ваши параметры)"
-echo "  ✓ .secrets/, .mcp.json (ключи и конфигурация)"
+echo "  ✓ .secrets/ (ключи)"
 echo "  ✓ .claude/settings.local.json (permissions)"
 echo "  ✓ personal/ (ваши файлы)"
 echo "  ✓ DS-strategy/ (ваше планирование)"
@@ -317,12 +317,17 @@ if [ -f "$ENV_FILE" ]; then
         echo "  Пересоздайте: bash setup.sh"
     else
         # Read variables safely (only simple KEY=VALUE)
-        while IFS='=' read -r key value; do
+        # Use read -r line + split on first '=' to handle values containing '=' (e.g. URLs, tokens)
+        while IFS= read -r line; do
             # Skip comments and empty lines
-            case "$key" in \#*|"") continue ;; esac
-            # Trim whitespace
+            case "$line" in \#*|"") continue ;; esac
+            # Split on first '=' only
+            key="${line%%=*}"
+            value="${line#*=}"
+            # Trim whitespace from key
             key=$(echo "$key" | tr -d '[:space:]')
-            # Export for use below
+            [ -z "$key" ] && continue
+            # Export for use below (secrets: L4_DATABASE_URL etc. are loaded but not substituted into files)
             declare "ENV_$key=$value"
         done < "$ENV_FILE"
 
@@ -334,7 +339,6 @@ if [ -f "$ENV_FILE" ]; then
             if grep -q '{{[A-Z_]*}}' "$filepath" 2>/dev/null; then
                 sed_inplace \
                     -e "s|{{GITHUB_USER}}|${ENV_GITHUB_USER:-}|g" \
-                    -e "s|{{EXOCORTEX_REPO}}|${ENV_EXOCORTEX_REPO:-}|g" \
                     -e "s|{{WORKSPACE_DIR}}|${ENV_WORKSPACE_DIR:-}|g" \
                     -e "s|{{CLAUDE_PATH}}|${ENV_CLAUDE_PATH:-}|g" \
                     -e "s|{{CLAUDE_PROJECT_SLUG}}|${ENV_CLAUDE_PROJECT_SLUG:-}|g" \
@@ -345,14 +349,39 @@ if [ -f "$ENV_FILE" ]; then
                 PLACEHOLDER_HIT=$((PLACEHOLDER_HIT + 1))
             fi
 
-            # Replace template repo name with user's repo name (skip UPSTREAM-CONST lines)
-            if [ -n "${ENV_EXOCORTEX_REPO:-}" ] && grep -q 'FMT-exocortex-template' "$filepath" 2>/dev/null; then
-                sed_inplace "/UPSTREAM-CONST/!s|FMT-exocortex-template|${ENV_EXOCORTEX_REPO}|g" "$filepath"
-            fi
+            # (Repo rename removed — FMT-exocortex-template stays as-is)
         done
 
         if [ "$PLACEHOLDER_HIT" -gt 0 ]; then
             echo "  Подставлено переменных в $PLACEHOLDER_HIT файлах."
+        fi
+
+        # === Preserve secrets: L4_BACKEND, L4_DATABASE_URL ===
+        # These are NOT substituted into template files.
+        # If they exist in .exocortex.env, they must NOT be overwritten by update.sh.
+
+        # === Migrate ~/.iwe-env if present (Ф8 migration scenario) ===
+        IWE_ENV_GLOBAL="$HOME/.iwe-env"
+        if [ -f "$IWE_ENV_GLOBAL" ]; then
+            MIGRATED_KEYS=0
+            # Check which keys are missing from .exocortex.env
+            for migrate_key in L4_BACKEND L4_DATABASE_URL; do
+                eval "existing=\${ENV_${migrate_key}:-}"
+                if [ -z "$existing" ]; then
+                    # Extract from ~/.iwe-env
+                    migrated_val=$(grep "^${migrate_key}=" "$IWE_ENV_GLOBAL" 2>/dev/null | head -1)
+                    migrated_val="${migrated_val#*=}"
+                    if [ -n "$migrated_val" ]; then
+                        echo "" >> "$ENV_FILE"
+                        echo "${migrate_key}=${migrated_val}" >> "$ENV_FILE"
+                        MIGRATED_KEYS=$((MIGRATED_KEYS + 1))
+                    fi
+                fi
+            done
+            if [ "$MIGRATED_KEYS" -gt 0 ]; then
+                echo "  ✓ Мигрировано $MIGRATED_KEYS ключей из ~/.iwe-env → .exocortex.env"
+                echo "  ~/.iwe-env больше не нужен. Удалить вручную: rm $IWE_ENV_GLOBAL"
+            fi
         fi
     fi
 else
@@ -365,14 +394,18 @@ else
 
     cat > "$ENV_FILE" <<ENVEOF
 # Exocortex configuration (auto-detected by update.sh — verify and fix values)
+# SECURITY: chmod 600. Listed in .gitignore. Do NOT commit this file.
 GITHUB_USER=your-username
-EXOCORTEX_REPO=$DETECTED_REPO
 WORKSPACE_DIR=$DETECTED_WORKSPACE
-CLAUDE_PATH=$(command -v claude 2>/dev/null || echo '/opt/homebrew/bin/claude')
+CLAUDE_PATH=$(command -v claude 2>/dev/null || echo 'claude')
 CLAUDE_PROJECT_SLUG=$(echo "$DETECTED_WORKSPACE" | tr '/' '-')
 TIMEZONE_HOUR=4
 TIMEZONE_DESC=4:00 UTC
 HOME_DIR=$HOME
+
+# === Knowledge Gateway (T3+) — fill in if using personal Pack index ===
+L4_BACKEND=
+L4_DATABASE_URL=
 ENVEOF
     chmod 600 "$ENV_FILE"
     echo "  Конфигурация восстановлена в $ENV_FILE"
@@ -401,7 +434,6 @@ echo ""
 echo "Обновление platform-space..."
 
 # Copy CLAUDE.md to workspace root
-# shellcheck disable=SC2034 # used by extensions
 CLAUDE_UPDATED=false
 for f in "${NEW_FILES[@]}" "${UPDATED_FILES[@]}"; do
     if [ "$f" = "CLAUDE.md" ]; then
@@ -479,6 +511,126 @@ for f in "${NEW_FILES[@]}" "${UPDATED_FILES[@]}"; do
         ;;
     esac
 done
+
+# (Step 6b removed — repo rename no longer supported, no link migration needed)
+
+# === Step 6b2: Ensure ~/.iwe-paths exists (WP-219, DP.FM.009) ===
+# Lookup-слой env-переменных для путей к скриптам. Генерируется setup.sh,
+# но при обновлении со старой версии (до WP-219) файл может отсутствовать.
+IWE_PATHS_FILE="$HOME/.iwe-paths"
+ZSHENV_FILE="$HOME/.zshenv"
+if [ ! -f "$IWE_PATHS_FILE" ]; then
+    cat > "$IWE_PATHS_FILE" <<IWEPATHS_EOF
+# IWE environment variables
+# Generated by update.sh (WP-219 migration). Rerun setup.sh or update.sh to regenerate.
+# Do not edit manually — changes will be lost.
+
+export IWE_WORKSPACE="$WORKSPACE_DIR"
+export IWE_TEMPLATE="\$IWE_WORKSPACE/FMT-exocortex-template"
+export IWE_SCRIPTS="\$IWE_TEMPLATE/scripts"
+export IWE_ROLES="\$IWE_TEMPLATE/roles"
+IWEPATHS_EOF
+    echo "  ✓ Миграция WP-219: создан $IWE_PATHS_FILE"
+
+    # Ensure ~/.zshenv sources ~/.iwe-paths (idempotent)
+    if [ -f "$ZSHENV_FILE" ] && grep -qF '.iwe-paths' "$ZSHENV_FILE"; then
+        : # already present
+    else
+        cat >> "$ZSHENV_FILE" <<'ZSHENV_EOF'
+
+# IWE environment (WP-219, DP.FM.009): lookup-слой для путей к скриптам
+[ -f "$HOME/.iwe-paths" ] && source "$HOME/.iwe-paths"
+ZSHENV_EOF
+        echo "  ✓ Миграция WP-219: $ZSHENV_FILE → sources \$HOME/.iwe-paths"
+        echo "  ℹ  Перезапустите shell: source $ZSHENV_FILE"
+    fi
+fi
+
+# === Step 6c: Regenerate .mcp.json in workspace (if template .mcp.json updated) ===
+# .mcp.json is immune from direct overwrite — but if the template version changed,
+# we regenerate the workspace copy with fresh variable substitution + user merge.
+MCP_TEMPLATE="$SCRIPT_DIR/.mcp.json"
+MCP_WORKSPACE="$WORKSPACE_DIR/.mcp.json"
+MCP_USER="$WORKSPACE_DIR/extensions/mcp-user.json"
+
+MCP_TEMPLATE_CHANGED=false
+for f in "${NEW_FILES[@]}" "${UPDATED_FILES[@]}"; do
+    if [ "$f" = ".mcp.json" ]; then MCP_TEMPLATE_CHANGED=true; break; fi
+done
+
+# === Step 6c: Migrate workspace .mcp.json to Gateway ===
+# Strategy: migrate in-place first (preserving user servers), then fallback to template copy.
+# This preserves any user-added MCP servers that are NOT in extensions/mcp-user.json.
+
+if [ -f "$MCP_WORKSPACE" ] && command -v python3 >/dev/null 2>&1; then
+    python3 -c "
+import json, sys
+
+with open('$MCP_WORKSPACE') as f:
+    data = json.load(f)
+
+servers = data.get('mcpServers', {})
+old_keys = [k for k in servers if k in ('knowledge-mcp', 'digital-twin-mcp', 'personal-knowledge-mcp')]
+changed = False
+
+if old_keys:
+    # Remove old stdio servers
+    for k in old_keys:
+        del servers[k]
+    changed = True
+
+if 'iwe-knowledge' not in servers:
+    # Add new remote Gateway
+    servers['iwe-knowledge'] = {'type': 'http', 'url': 'https://mcp.aisystant.com/mcp'}
+    changed = True
+
+if changed:
+    # Move iwe-knowledge to the front, keep all other servers
+    ordered = {'iwe-knowledge': servers.pop('iwe-knowledge')}
+    ordered.update(servers)
+    data['mcpServers'] = ordered
+    with open('$MCP_WORKSPACE', 'w') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+    removed = ', '.join(old_keys) if old_keys else ''
+    msg = '  ✓ .mcp.json мигрирован'
+    if removed:
+        msg += ': ' + removed + ' → iwe-knowledge (Gateway)'
+    else:
+        msg += ': добавлен iwe-knowledge (Gateway)'
+    print(msg)
+" 2>/dev/null
+elif [ ! -f "$MCP_WORKSPACE" ] && [ -f "$MCP_TEMPLATE" ]; then
+    # No workspace .mcp.json — copy from template
+    cp "$MCP_TEMPLATE" "$MCP_WORKSPACE"
+    echo "  ✓ .mcp.json создан из шаблона (Gateway)"
+elif [ -f "$MCP_WORKSPACE" ] && ! command -v python3 >/dev/null 2>&1; then
+    # No python3 — check if already migrated, otherwise warn
+    if grep -q 'iwe-knowledge' "$MCP_WORKSPACE" 2>/dev/null; then
+        echo "  ✓ .mcp.json уже содержит iwe-knowledge"
+    else
+        echo "  ⚠ .mcp.json: python3 не найден, автомиграция пропущена."
+        echo "    Замените knowledge-mcp/digital-twin-mcp на iwe-knowledge вручную."
+        echo "    Образец: $MCP_TEMPLATE"
+    fi
+fi
+
+# Merge extensions/mcp-user.json into workspace .mcp.json (always, if both exist)
+if [ -f "$MCP_WORKSPACE" ] && [ -f "$MCP_USER" ]; then
+    if command -v jq >/dev/null 2>&1; then
+        USER_COUNT=$(jq '.mcpServers | length' "$MCP_USER" 2>/dev/null || echo "0")
+        if [ "$USER_COUNT" -gt 0 ]; then
+            MCP_MERGED=$(jq -s '.[0].mcpServers * .[1].mcpServers | {mcpServers: .}' "$MCP_WORKSPACE" "$MCP_USER" 2>/dev/null)
+            if [ -n "$MCP_MERGED" ]; then
+                echo "$MCP_MERGED" > "$MCP_WORKSPACE"
+                echo "  ✓ .mcp.json — $USER_COUNT пользовательских MCP из extensions/mcp-user.json добавлены"
+            fi
+        fi
+    else
+        echo "  ○ .mcp.json — jq не установлен, мёрж extensions/mcp-user.json пропущен"
+        echo "    Установите jq: brew install jq"
+    fi
+fi
 
 # Reinstall roles if changed
 ROLES_CHANGED=false

@@ -2,8 +2,8 @@
 # Шаблон уведомлений: Стратег (R1)
 # Вызывается из notify.sh через source
 
-STRATEGY_DIR="/home/trapt22/IWE/DS-strategy/current"
-STRATEGY_REPO_DIR="/home/trapt22/IWE/DS-strategy"
+STRATEGY_DIR="{{WORKSPACE_DIR}}/DS-strategy/current"
+STRATEGY_REPO_DIR="{{WORKSPACE_DIR}}/DS-strategy"
 DATE=$(date +%Y-%m-%d)
 
 find_strategy_file() {
@@ -27,15 +27,14 @@ table_to_list() {
     local file="$1"
     local section="$2"
 
-    # Ищем секцию по ## заголовку ИЛИ по <summary><b>заголовку</b></summary> (legacy <details>)
-    sed -n "/^## ${section}\|<summary><b>${section}<\/b><\/summary>/,/^---\|^<\/details>/p" "$file" \
+    sed -n "/^## ${section}/,/^---/p" "$file" \
         | grep '^|' \
         | tail -n +3 \
         | while IFS='|' read -r _ num rp budget priority status _rest; do
-            num=$(echo "$num" | xargs | sed 's/~~//g')
-            rp=$(echo "$rp" | xargs | sed 's/\*\*//g; s/~~//g')
-            budget=$(echo "$budget" | xargs | sed 's/~~//g')
-            status=$(echo "$status" | xargs | sed 's/~~//g')
+            num=$(echo "$num" | xargs)
+            rp=$(echo "$rp" | xargs | sed 's/\*\*//g')
+            budget=$(echo "$budget" | xargs)
+            status=$(echo "$status" | xargs)
 
             local icon="⬜"
             case "$status" in

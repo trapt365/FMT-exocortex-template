@@ -13,11 +13,11 @@ set -e
 # Конфигурация
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="/home/trapt22/IWE"
+WORKSPACE="{{WORKSPACE_DIR}}"
 PROMPTS_DIR="$REPO_DIR/prompts"
-LOG_DIR="/home/trapt22/logs/extractor"
-CLAUDE_PATH="/home/trapt22/.npm-global/bin/claude"
-ENV_FILE="/home/trapt22/.config/aist/env"
+LOG_DIR="{{HOME_DIR}}/logs/extractor"
+CLAUDE_PATH="{{CLAUDE_PATH}}"
+ENV_FILE="{{HOME_DIR}}/.config/aist/env"
 
 # AI CLI: переопределение через переменные окружения (см. strategist.sh)
 AI_CLI="${AI_CLI:-$CLAUDE_PATH}"
@@ -47,7 +47,7 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    local notify_script="$WORKSPACE/DS-exocortex/roles/synchronizer/scripts/notify.sh"
+    local notify_script="$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
     if [ -f "$notify_script" ]; then
         "$notify_script" extractor "$scenario" >> "$LOG_FILE" 2>&1 || true
     fi
@@ -174,12 +174,6 @@ case "$1" in
         run_claude "session-close"
         ;;
 
-    "obsidian-scan")
-        log "Running Obsidian daily notes scan"
-        run_claude "obsidian-scan"
-        notify_telegram "obsidian-scan"
-        ;;
-
     "on-demand")
         log "Running on-demand extraction"
         run_claude "on-demand"
@@ -194,7 +188,6 @@ case "$1" in
         echo "  inbox-check    Headless: обработка pending captures (launchd, 3h)"
         echo "  audit          Аудит Pack'ов"
         echo "  session-close  Экстракция при закрытии сессии"
-        echo "  obsidian-scan  Headless: сканирование Obsidian daily notes (ежедневно, 03:00)"
         echo "  on-demand      Экстракция по запросу"
         exit 1
         ;;

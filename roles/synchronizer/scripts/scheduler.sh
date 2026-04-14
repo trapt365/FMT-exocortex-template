@@ -34,7 +34,7 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="/home/trapt22/IWE/DS-exocortex/roles"
+ROLES_DIR="{{WORKSPACE_DIR}}/FMT-exocortex-template/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Таймаут на задачи (сек): предотвращает блокировку dispatch зависшей задачей
@@ -47,7 +47,7 @@ get_role_runner() {
     local yaml="$ROLES_DIR/$role/role.yaml"
     if [ -f "$yaml" ]; then
         local runner
-        runner=$(grep '^runner:' "$yaml" | sed 's/runner: *//' | tr -d '"' | tr -d "'" | tr -d '\r')
+        runner=$(grep '^runner:' "$yaml" | sed 's/runner: *//' | tr -d '"' | tr -d "'")
         [ -n "$runner" ] && echo "$ROLES_DIR/$role/$runner" && return
     fi
     # Fallback: convention-based path
@@ -134,7 +134,7 @@ cleanup_state() {
 # Разделяет архивацию (мгновенно) и генерацию (15+ мин Claude Code).
 # Гарантирует: даже если генерация ещё не началась, старый план не висит в current/.
 pre_archive_dayplan() {
-    local strategy_dir="/home/trapt22/IWE/DS-strategy"
+    local strategy_dir="{{WORKSPACE_DIR}}/DS-strategy"
     local archive_dir="$strategy_dir/archive/day-plans"
     local moved=0
 
@@ -194,17 +194,6 @@ dispatch() {
         ran=1
     fi
 
-    # --- Экстрактор: obsidian-scan (03:00+, до strategist morning) ---
-    if (( 10#$HOUR >= 3 )) && ! ran_today "extractor-obsidian-scan"; then
-        log "→ extractor obsidian-scan (hour=$HOUR)"
-        if "$EXTRACTOR_SH" obsidian-scan >> "$LOG_FILE" 2>&1; then
-            mark_done "extractor-obsidian-scan"
-        else
-            log "WARN: extractor obsidian-scan failed (will retry next dispatch)"
-        fi
-        ran=1
-    fi
-
     # --- Стратег: morning (04:00-21:59) ---
     if (( 10#$HOUR >= 4 && 10#$HOUR < 22 )) && ! ran_today "strategist-morning"; then
         log "→ strategist morning (catch-up: hour=$HOUR)"
@@ -244,7 +233,6 @@ dispatch() {
         log "→ synchronizer code-scan (hour=$HOUR)"
         if timeout "$TASK_TIMEOUT_SHORT" "$SCRIPT_DIR/code-scan.sh" >> "$LOG_FILE" 2>&1; then
             mark_done "synchronizer-code-scan"
-            "$NOTIFY_SH" synchronizer code-scan >> "$LOG_FILE" 2>&1 || true
         else
             log "WARN: code-scan failed (will retry next dispatch)"
         fi
@@ -268,7 +256,6 @@ dispatch() {
             log "→ synchronizer daily-report (hour=$HOUR)"
             if timeout "$TASK_TIMEOUT_SHORT" "$SCRIPT_DIR/daily-report.sh" >> "$LOG_FILE" 2>&1; then
                 mark_done "synchronizer-daily-report"
-                "$NOTIFY_SH" synchronizer daily-report >> "$LOG_FILE" 2>&1 || true
             else
                 log "WARN: daily-report failed (will retry next dispatch)"
             fi

@@ -4,11 +4,11 @@
 
 schedules:
   strategist:
-    script: "/home/trapt22/IWE/DS-exocortex/roles/strategist/scripts/strategist.sh"
+    script: "{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/strategist/scripts/strategist.sh"
     scenarios:
       morning:
         type: daily
-        hour: "2"     # Mon=session-prep, Tue-Sun=day-plan
+        hour: "{{TIMEZONE_HOUR}}"     # Mon=session-prep, Tue-Sun=day-plan
         window: "4-21"                # После 22:00 бесполезен
       note-review:
         type: daily
@@ -20,12 +20,8 @@ schedules:
         hour: 0
 
   extractor:
-    script: "/home/trapt22/IWE/DS-exocortex/roles/extractor/scripts/extractor.sh"
+    script: "{{WORKSPACE_DIR}}/FMT-exocortex-template/roles/extractor/scripts/extractor.sh"
     scenarios:
-      obsidian-scan:
-        type: daily
-        hour: 3                       # Before strategist morning (04:00)
-        description: "Сканирование Obsidian daily notes → inbox"
       inbox-check:
         type: interval
         seconds: 10800                # 3 hours

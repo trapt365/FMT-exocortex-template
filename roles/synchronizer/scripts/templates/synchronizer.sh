@@ -2,7 +2,7 @@
 # Шаблон уведомлений: Синхронизатор (R8)
 # Вызывается из notify.sh через source
 
-LOG_DIR="/home/trapt22/logs/synchronizer"
+LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 
 build_message() {
@@ -36,20 +36,6 @@ build_message() {
             if [ "$found" -gt 0 ]; then
                 printf "<b>Репо:</b>\n%s" "$repo_list"
             fi
-            ;;
-
-        "daily-report")
-            local report_log="$LOG_DIR/daily-report-$DATE.log"
-
-            if [ ! -f "$report_log" ]; then
-                printf "<b>📊 Daily Report</b>\n\n📅 %s\n\nОтчёт сгенерирован." "$DATE"
-                return
-            fi
-
-            local summary
-            summary=$(tail -5 "$report_log" | grep -v '^\[' | head -3)
-
-            printf "<b>📊 Daily Report</b>\n\n📅 %s\n\n%s" "$DATE" "$summary"
             ;;
 
         *)

@@ -142,7 +142,6 @@ jobs:
           echo "Not significant: only minor/internal changes ($BULLET_COUNT entries, no significant patterns)"
 
       - name: Send notification via bot webhook
-        continue-on-error: true  # не блокирует CI пока секреты не настроены
         if: steps.check.outputs.has_changes == 'true' && steps.changelog.outputs.has_changelog == 'true' && steps.significance.outputs.is_significant == 'true'
         env:
           BOT_WEBHOOK_URL: ${{ secrets.BOT_WEBHOOK_URL }}

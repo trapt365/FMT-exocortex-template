@@ -14,17 +14,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$HOME/.local/state/exocortex"
-<<<<<<< HEAD
-LOG_DIR="/home/trapt22/logs/synchronizer"
-STRATEGY_DIR="/home/trapt22/IWE/DS-strategy"
-REPORT_DIR="$STRATEGY_DIR/current"
-ARCHIVE_DIR="$STRATEGY_DIR/archive/scheduler-reports"
-=======
-LOG_DIR="/home/trapt22/logs/synchronizer"
-STRATEGY_DIR="/home/trapt22/IWE/DS-strategy"
+LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
+STRATEGY_DIR="{{WORKSPACE_DIR}}/DS-strategy"
 
 # Agent Workspace: если существует — отчёты идут туда
-AGENT_WORKSPACE="/home/trapt22/IWE/DS-agent-workspace"
+AGENT_WORKSPACE="{{WORKSPACE_DIR}}/DS-agent-workspace"
 if [ -d "$AGENT_WORKSPACE/.git" ]; then
     REPORT_DIR="$AGENT_WORKSPACE/scheduler/reports"
     ARCHIVE_DIR="$AGENT_WORKSPACE/scheduler/reports/archive"
@@ -36,7 +30,6 @@ else
     COMMIT_DIR="$STRATEGY_DIR"
     COMMIT_ADD_PATHS=("current/SchedulerReport"*.md "archive/scheduler-reports/")
 fi
->>>>>>> upstream/main
 
 DATE=$(date +%Y-%m-%d)
 DOW=$(date +%u)
@@ -48,7 +41,7 @@ DRY_RUN=false
 
 REPORT_FILE="$REPORT_DIR/SchedulerReport $DATE.md"
 SCHEDULER_LOG="$LOG_DIR/scheduler-$DATE.log"
-STRATEGIST_LOG="/home/trapt22/logs/strategist/$DATE.log"
+STRATEGIST_LOG="{{HOME_DIR}}/logs/strategist/$DATE.log"
 
 mkdir -p "$ARCHIVE_DIR"
 
@@ -232,7 +225,7 @@ $warnings
 **Что делать:**
 "
         if echo "$warnings" | grep -q "push failed" 2>/dev/null; then
-            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /home/trapt22/IWE/DS-strategy && git pull --rebase && git push\`
+            report+="- **push failed:** Mac был оффлайн. Запусти \`cd {{WORKSPACE_DIR}}/DS-strategy && git pull --rebase && git push\`
 "
         fi
     else
@@ -270,27 +263,18 @@ else
     echo "$REPORT" > "$REPORT_FILE"
     log "Report written: $REPORT_FILE"
 
-<<<<<<< HEAD
-    cd "$STRATEGY_DIR"
-
-    # Stash dirty files so pull --rebase can work on a clean tree
-    local stashed=false
-    if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
-        git stash --quiet 2>/dev/null && stashed=true && log "Stashed dirty working tree"
-    fi
-
-    local pull_ok=true
-    git pull --rebase --quiet 2>/dev/null || { log "WARN: pull --rebase failed (offline?)"; pull_ok=false; }
-
-    # Restore stashed changes
-    if [ "$stashed" = true ]; then
-        git stash pop --quiet 2>/dev/null || log "WARN: stash pop conflict — manual resolution needed"
-    fi
-
-=======
     cd "$COMMIT_DIR"
+    # Staging Isolation: stash → pull → pop → reset → add only own files
+    # Without stash, pull --rebase fails when Claude sessions leave unstaged changes
+    stash_count_before=""
+    stash_count_after=""
+    stash_count_before=$(git stash list 2>/dev/null | wc -l)
+    git stash -u --quiet 2>/dev/null || true
     git pull --rebase --quiet 2>/dev/null || log "WARN: pull --rebase failed (offline?)"
->>>>>>> upstream/main
+    stash_count_after=$(git stash list 2>/dev/null | wc -l)
+    if [ "$stash_count_after" -gt "$stash_count_before" ]; then
+        git stash pop --quiet 2>/dev/null || log "WARN: stash pop failed"
+    fi
     git reset --quiet 2>/dev/null || true
 
     archive_old_reports
@@ -301,12 +285,8 @@ else
 
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -m "auto: scheduler report $DATE" --quiet
-        if [ "$pull_ok" = true ]; then
-            git push --quiet 2>/dev/null || log "WARN: push failed"
-            log "Committed and pushed"
-        else
-            log "WARN: committed locally but NOT pushed (pull failed earlier — will retry next run)"
-        fi
+        git push --quiet 2>/dev/null || log "WARN: push failed"
+        log "Committed and pushed"
     else
         log "No changes to commit"
     fi

@@ -2,7 +2,7 @@
 
 ## Контекст
 
-- Планы: /home/trapt22/IWE/DS-strategy/current/
+- Планы: {{WORKSPACE_DIR}}/DS-strategy/current/
 
 ## Алгоритм
 

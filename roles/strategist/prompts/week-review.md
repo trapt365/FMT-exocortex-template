@@ -1,204 +1,24 @@
-<<<<<<< HEAD
-Выполни сценарий Week Review для роли Стратег (R1).
-
-> **Триггер:** Автоматический — Пн 00:00 (полночь Вс→Пн, launchd).
-> Создаёт WeekReport для клуба. Служит входом для session-prep (Пн 4:00).
-
-Источник сценария: /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/03-week-review.md
-
-## Контекст
-
-- **WeekPlan:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
-- **Шаблон:** /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/templates/reviews/weekly-review.md
-
-## Алгоритм
-
-### 1. Сбор данных (Стратег собирает сам)
-
-```bash
-# Для КАЖДОГО репо в /home/trapt22/IWE/:
-git -C /home/trapt22/IWE/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
-```
-
-- Пройди по ВСЕМ репозиториям в `/home/trapt22/IWE/`
-- Загрузи текущий WeekPlan из `DS-strategy/current/`
-- Сопоставь коммиты с РП из WeekPlan
-- Определи статус каждого РП: done / partial / not started
-
-### 2. Статистика
-
-- Completion rate: X/Y РП (N%)
-- Коммитов всего
-- Активных дней (дни с коммитами)
-- По репозиториям (таблица)
-- По системам (Созидатель, Экосистема, ИТ-платформа, Бот)
-
-### 3. Инсайты
-
-- Что получилось хорошо
-- Что можно улучшить
-- Блокеры (если были)
-- Carry-over на следующую неделю
-
-### 3b. Контент-план на следующую неделю
-
-> **Источники:** Content ideas из рубежей работы (`DS-strategy/drafts/draft-list.md`), результаты прошлой недели, backlog из [Стратегии маркетинга §7](../../DS-ecosystem-development/B.Aisystant-Ecosystem/B1.Society/B1.1.Meaning/1.1.2.%20Marketing/Стратегия%20маркетинга%201.1.md).
-
-1. Собери Content ideas, накопленные за неделю (из draft-list.md, captures, Close-отчётов)
-2. Сопоставь с backlog публикаций из Стратегии маркетинга §7
-3. Предложи 2-3 публикации на следующую неделю:
-   - Что адаптировать (источник)
-   - Для кого (сегмент С1/С2/С3)
-   - Куда (Habr / LinkedIn / TG)
-4. Запиши в WeekReport → секция «Контент-план W{N+1}»
-
-### 4. Формат для клуба
-
-- Используй шаблон `weekly-review.md` (если есть)
-- Добавь хештеги
-- Формат: компактный, читаемый, с метриками
-
-### 5. Сохранение
-
-1. Создай `current/WeekReport W{N} YYYY-MM-DD.md`
-2. Закоммить в DS-strategy
-
-### 6. Создать пост для клуба (авто-публикация)
-
-> Пост итогов недели публикуется автоматически в Пн 07:14 МСК. Стратег создаёт его сразу со `status: ready`.
-
-1. Переключись на **роль Автора (R4)** и на основе WeekReport сформируй пост для клуба.
-
-   **Обязательно прочитай** `/home/trapt22/IWE/DS-Knowledge-Index/CLAUDE.md` — полные инструкции роли Автора:
-   - § 2 — стандарт названий для итогов недели
-   - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели` (4 уровня влияния, голос от первого лица, 400-700 слов)
-
-   Стратег отвечает за **данные** (метрики, факты, сравнения). Автор отвечает за **подачу** (голос, структура, стиль).
-
-   **Обязательные данные от Стратега → Автору:**
-   - Метрики недели (коммиты, completion rate, сравнение с прошлой неделей)
-   - Ключевые факты (что реально было сделано)
-   - Carry-over → W{N+1} (из WeekReport, секция «Carry-over»)
-   - Фокус следующей недели (из WeekReport, секция «Следующая неделя»)
-
-   Автор использует carry-over и фокус для финала поста — «идеи на следующую неделю».
-
-   Выбери лучшее название сам (в автоматическом режиме нет пользователя для выбора).
-
-2. Создай файл `/home/trapt22/IWE/DS-Knowledge-Index/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
-
-3. Frontmatter:
-
-```yaml
----
-type: post
-title: "..."
-audience: community
-status: ready
-created: YYYY-MM-DD
-target: club
-source_knowledge: null
-tags: [итоги-недели, W{N}]
-content_plan: null
----
-```
-
-4. Обнови `/home/trapt22/IWE/DS-Knowledge-Index/docs/README.md` — добавь строку в начало текущего месяца
-5. Закоммить и запушь `DS-Knowledge-Index` (git add docs/ && git commit && git push)
-
-**Шаблон WeekReport:**
-
-```markdown
----
-type: week-report
-week: W{N}
-date: YYYY-MM-DD
-status: final
-agent: Стратег
----
-
-# WeekReport W{N}: DD мес — DD мес YYYY
-
-## Метрики
-- **РП:** X/Y завершено (N%)
-- **Коммитов:** N в M репо
-- **Активных дней:** N/7
-
-## По репозиториям
-
-| Репо | Коммиты | Основные изменения |
-|------|---------|-------------------|
-| ... | ... | ... |
-
-## РП
-
-| # | РП | Статус | Комментарий |
-|---|-----|--------|-------------|
-| ... | ... | done/partial/⬜ | ... |
-
-## Инсайты
-- ...
-
-## Carry-over
-- ...
-
-## Контент-план W{N+1}
-
-> Источник: Content ideas за неделю + backlog из Стратегии маркетинга §7
-
-| # | Тема | Источник | Сегмент | Канал |
-|---|------|---------|---------|-------|
-| ... | ... | пост/черновик | С1/С2/С3 | Habr/LinkedIn/TG |
-
----
-
-*Создан: YYYY-MM-DD (Week Review)*
-```
-
-### 7. Запись ссылки на пост в WeekPlan
-
-> **ОБЯЗАТЕЛЬНО.** После создания поста — записать ссылку в WeekPlan текущей недели.
-
-1. Открой текущий `DS-strategy/current/WeekPlan W{N}*.md`
-2. Найди секцию «Контент-план W{N}» (или создай, если нет)
-3. Добавь строку:
-
-```markdown
-**Пост итогов W{N-1}:** [название](https://github.com/trapt365/DS-Knowledge-Index/blob/main/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N-1}.md) — status: ready → авто-публикация Пн 07:14
-```
-
-4. Закоммить вместе с остальными изменениями
-
-> Эта ссылка позволяет: (а) Стратегу в session-prep видеть, какой пост создан, (б) пользователю проверить пост до публикации, (в) day-plan знать, что контент готов.
-
-Результат:
-- WeekReport в `current/` — как вход для session-prep
-- Пост итогов в `DS-Knowledge-Index/docs/{YYYY}/` со `status: ready` — авто-публикация Пн 07:14
-- Ссылка на пост в WeekPlan — для отслеживания
-=======
 Выполни сценарий Week Review для роли Стратег (R1).
 
 > **Триггер:** Автоматический — Пн 00:00 (полночь Вс→Пн, launchd).
 > Записывает итоги недели в секцию WeekPlan + создаёт пост для клуба. Служит входом для session-prep (Пн 4:00).
 > **WeekReport как отдельный файл НЕ создаётся** (deprecated 2026-03-25). Итоги — секция в WeekPlan.
 
-Источник сценария: /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/03-week-review.md
 
 ## Контекст
 
-- **WeekPlan:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
-- **Шаблон:** /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/templates/reviews/weekly-review.md
+- **WeekPlan:** {{WORKSPACE_DIR}}/DS-strategy/current/WeekPlan W*.md
 
 ## Алгоритм
 
 ### 1. Сбор данных (Стратег собирает сам)
 
 ```bash
-# Для КАЖДОГО репо в /home/trapt22/IWE/:
-git -C /home/trapt22/IWE/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
+git -C {{WORKSPACE_DIR}}/<repo> log --since="last monday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `/home/trapt22/IWE/`
+- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
 - Загрузи текущий WeekPlan из `DS-strategy/current/`
 - Сопоставь коммиты с РП из WeekPlan
 - Определи статус каждого РП: done / partial / not started
@@ -220,7 +40,6 @@ git -C /home/trapt22/IWE/<repo> log --since="last monday 00:00" --until="today 0
 
 ### 3b. Контент-план на следующую неделю
 
-> **Источники:** Content ideas из рубежей работы (`DS-strategy/drafts/draft-list.md`), результаты прошлой недели, backlog из Стратегии маркетинга §7 (DS-ecosystem-development).
 
 1. Собери Content ideas, накопленные за неделю (из draft-list.md, captures, Close-отчётов)
 2. Сопоставь с backlog публикаций из Стратегии маркетинга §7
@@ -251,7 +70,6 @@ git -C /home/trapt22/IWE/<repo> log --since="last monday 00:00" --until="today 0
 
 1. Переключись на **роль Автора (R4)** и на основе секции «Итоги W{N}» в WeekPlan сформируй пост для клуба.
 
-   **Обязательно прочитай** `/home/trapt22/IWE/DS-Knowledge-Index/CLAUDE.md` — полные инструкции роли Автора:
    - § 2 — стандарт названий для итогов недели
    - § 3 — формат поста: аудитория `community`, структура для тега `итоги-недели` (4 уровня влияния, голос от первого лица, 400-700 слов)
 
@@ -267,7 +85,6 @@ git -C /home/trapt22/IWE/<repo> log --since="last monday 00:00" --until="today 0
 
    Выбери лучшее название сам (в автоматическом режиме нет пользователя для выбора).
 
-2. Создай файл `/home/trapt22/IWE/DS-Knowledge-Index/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N}.md`
 
 3. Frontmatter:
 
@@ -285,8 +102,6 @@ content_plan: null
 ---
 ```
 
-4. Обнови `/home/trapt22/IWE/DS-Knowledge-Index/docs/README.md` — добавь строку в начало текущего месяца
-5. Закоммить и запушь `DS-Knowledge-Index` (git add docs/ && git commit && git push)
 
 **Шаблон секции «Итоги W{N}» в WeekPlan:**
 
@@ -334,7 +149,6 @@ content_plan: null
 3. Добавь строку:
 
 ```markdown
-**Пост итогов W{N-1}:** [название](https://github.com/trapt365/DS-Knowledge-Index/blob/main/docs/{YYYY}/{YYYY-MM-DD}-week-review-w{N-1}.md) — status: ready → авто-публикация Пн 07:14
 ```
 
 4. Закоммить вместе с остальными изменениями
@@ -343,7 +157,6 @@ content_plan: null
 
 Результат:
 - Секция «Итоги W{N}» в WeekPlan — как вход для session-prep
-- Пост итогов в `DS-Knowledge-Index/docs/{YYYY}/` со `status: ready` — авто-публикация Пн 07:14
 - Ссылка на пост в WeekPlan — для отслеживания
 
 ### 8. Week Close: обслуживание MEMORY.md
@@ -375,4 +188,3 @@ content_plan: null
    - MEMORY.md ≤ 100
 3. Устаревшие записи → обновить или удалить
 4. Результат: отчёт «Memory audit: N файлов, M строк суммарно, K обновлено»
->>>>>>> upstream/main

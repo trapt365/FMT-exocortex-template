@@ -32,7 +32,30 @@ verify_quick_close: true
 # Telegram уведомления от ролей (strategist, extractor, synchronizer)
 telegram_notifications: true
 
+# === MCP / Capture ===
+
+# Уровень инициативы агента при Capture-to-Pack (WP-189 Ф2):
+#   manual  — только по явной команде пользователя
+#   propose — агент предлагает capture, пользователь подтверждает одним кликом (default)
+#   auto    — агент пишет без подтверждения
+capture_autonomy: propose
+
+# === Интеграции ===
+
+# Путь к скрипту синхронизации Linear (day-close.sh шаг 3)
+# Пустой или отсутствует → шаг пропускается
+# Пример: "~/IWE/path/to/linear-sync.sh"
+linear_sync_path: ""
+
 # === Расширения ===
 
 # Директория с пользовательскими расширениями протоколов
 extensions_dir: extensions
+
+# === Автор шаблона ===
+
+# Авторский режим: разрешает прямое редактирование L1 файлов (protocol-*, skills/)
+# Включать ТОЛЬКО если вы — автор шаблона (source-of-truth в вашем IWE,
+# пропагация в FMT через template-sync.sh)
+# Для обычных пользователей: false (кастомизация только через extensions/)
+author_mode: false

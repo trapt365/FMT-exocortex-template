@@ -63,9 +63,102 @@
 
 Подробности: [params.yaml](../params.yaml).
 
+## Конфиг Day Open (day-rhythm-config.yaml)
+
+Поведение Day Open управляется через `memory/day-rhythm-config.yaml` (не params.yaml).
+
+| Параметр | Что управляет |
+|----------|---------------|
+| `budget_spread.enabled` | Распределять недельный бюджет РП по дням (true/false) |
+| `budget_spread.threshold_h` | Минимальный недельный бюджет для участия в расчёте (по умолчанию: 4h) |
+| `budget_spread.rounding` | Шаг округления daily_slot (по умолчанию: 0.5h) |
+
+**Пример:** РП с бюджетом 6h/нед, среда (days_left=3) → daily_slot = round(6/3, 0.5) = 2h.
+
+## Несколько расширений одного hook (конфликты имён)
+
+Если нужно два расширения в одной точке — добавьте суффикс через точку:
+
+```
+extensions/day-close.after.md          # основное
+extensions/day-close.after.health.md   # дополнительное (например, от другого пакета)
+```
+
+Загружаются в **алфавитном порядке** — конфликта нет, оба выполнятся.
+
+## Установка чужого расширения (sharing)
+
+Расширения IWE — обычные Markdown-файлы. Установка:
+
+```bash
+cp ~/Downloads/day-close.after.health.md ~/IWE/extensions/
+```
+
+### Формат пакета расширений (bundle)
+
+```
+my-extension-pack/
+  README.md                    # описание, автор, версия
+  extensions/
+    day-close.after.md          # файлы расширений
+  params-defaults.yaml          # рекомендуемые параметры (не применяются автоматически)
+```
+
+Установка bundle:
+
+```bash
+cp my-extension-pack/extensions/* ~/IWE/extensions/
+# Просмотреть params-defaults.yaml и добавить нужные параметры в ~/IWE/params.yaml вручную
+```
+
+Посмотреть все доступные extension points: `/extend`
+
+## Подключение своего MCP (mcp-user.json)
+
+Добавьте свои MCP-серверы в `extensions/mcp-user.json`. При каждом `update.sh` они автоматически мёржатся в `.mcp.json`.
+
+### Namespace соглашение
+
+| Префикс | Кто | Примеры |
+|---------|-----|---------|
+| без префикса | Платформенные (зарезервированы) | `iwe-knowledge` (Gateway, агрегирует knowledge + digital-twin) |
+| `ext-*` | Вендорские | `ext-google-calendar`, `ext-linear`, `ext-slack` |
+| `<ваш префикс>-*` | Ваши MCP | `tseren-notes`, `tseren-obsidian` |
+
+Используйте свой уникальный префикс (например username) — это предотвращает конфликты при обновлениях.
+
+### Пример: добавить свой MCP
+
+Файл `extensions/mcp-user.json`:
+
+```json
+{
+  "mcpServers": {
+    "user-my-notes": {
+      "command": "npx",
+      "args": ["-y", "my-notes-mcp"],
+      "env": {
+        "NOTES_DIR": "/path/to/my/notes"
+      }
+    },
+    "ext-linear": {
+      "command": "npx",
+      "args": ["-y", "@mseep/linear-mcp"],
+      "env": {
+        "LINEAR_API_KEY": "lin_api_..."
+      }
+    }
+  }
+}
+```
+
+После `update.sh` эти серверы появятся в `.mcp.json`. Требуется `jq` (`brew install jq`).
+
+**Важно:** `update.sh` не трогает `extensions/mcp-user.json` — ваши MCP в безопасности при обновлениях.
+
 ## Правила
 
-1. Имена файлов: `<protocol>.<hook>.md` — строго по формату
+1. Имена файлов: `<protocol>.<hook>.md` или `<protocol>.<hook>.<suffix>.md`
 2. Содержимое: markdown, будет вставлен как блок в протокол
 3. `update.sh` не трогает `extensions/` — ваши файлы в безопасности
 4. Несколько расширений одного hook: загружаются в алфавитном порядке

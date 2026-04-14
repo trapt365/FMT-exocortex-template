@@ -1,44 +1,14 @@
-<<<<<<< HEAD
-Выполни сценарий Day Open для роли Стратег (R1).
-
-> **Триггер:** Автоматический — ежедневно (кроме strategy_day).
-
-## Контекст
-
-- **WeekPlan:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
-- **DayPlan (вчера):** /home/trapt22/IWE/DS-strategy/current/DayPlan *.md
-- **Day rhythm config:** /home/trapt22/.claude/projects/-mnt-c-Users-Timur-Documents-IWE/memory/day-rhythm-config.yaml
-- **Протокол:** /home/trapt22/.claude/projects/-mnt-c-Users-Timur-Documents-IWE/memory/protocol-open.md § День
-
-## Алгоритм
-
-Прочитай протокол Day Open из `memory/protocol-open.md § День` и выполни все шаги:
-
-1. **Вчера** — собрать коммиты за вчера из всех репо, сопоставить с DayPlan
-2. **План на сегодня** — выбрать 2-4 РП из WeekPlan, слот 1 = саморазвитие
-3. **Саморазвитие** — текущее руководство, где остановился, черновики
-4. **IWE за ночь** — проверить логи автоматики
-5. **Мир** — новости по топикам из day-rhythm-config.yaml
-6. **Запись** — создать DayPlan, архивировать предыдущий, закоммитить
-
-## Результат
-
-- `DS-strategy/current/DayPlan YYYY-MM-DD.md` создан
-- Предыдущий DayPlan → `archive/day-plans/`
-- Закоммичено и запушено в DS-strategy
-=======
 > **DEPRECATED (WP-98, 2026-03-14).** Day Open перенесён в `memory/protocol-open.md § День` (ОРЗ-фрактал).
 > Этот файл сохранён для справки. При триггере «открывай день» → читать `protocol-open.md`.
 
 Выполни сценарий Day Plan для роли Стратег (R1).
 
-Источник сценария: /home/trapt22/IWE/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.ROLE.012-strategist/scenarios/scheduled/02-day-plan.md
 
 ## Контекст
 
-- **HUB (личные планы):** /home/trapt22/IWE/DS-strategy/current/
-- **SPOKE (планы репо):** /home/trapt22/IWE/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/-home-trapt22-IWE/memory/MEMORY.md
+- **HUB (личные планы):** {{WORKSPACE_DIR}}/DS-strategy/current/
+- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
+- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
 
 ## Именование файлов в current/
 
@@ -59,11 +29,11 @@ DS-strategy/
 **Стратег ОБЯЗАН** собрать коммиты за вчерашний день самостоятельно:
 
 ```bash
-# Для КАЖДОГО репо в /home/trapt22/IWE/:
-git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
+git -C {{WORKSPACE_DIR}}/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `/home/trapt22/IWE/`
+- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
 - Сгруппируй коммиты по репозиториям
 - Сопоставь коммиты с РП из недельного плана
 - Определи статус каждого затронутого РП: done / partial / not started
@@ -113,22 +83,7 @@ git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:
   - Добавь в таблицу «План на сегодня» колонку «Контекст» со ссылкой на файл
   - В секцию «Рекомендация» включи: текущее состояние из context file, следующий шаг
 
-### 3c. Проверка незалитых коммитов бота (pilot → new-architecture)
-
-> **ВАЖНО:** Используй `git cherry`, а НЕ `git log A..B`. Cherry-pick создаёт новые SHA — `git log` считает их «отсутствующими», хотя содержимое идентичное. `git cherry` сравнивает по patch-id (содержимому).
-
-```bash
-# Пример: проверка рассинхрона веток (замените путь и имена веток на свои)
-# git -C /home/trapt22/IWE/your-org/your-bot cherry -v main develop 2>/dev/null | grep '^\+'
-```
-
-- Если есть коммиты с `+` в любом направлении → добавить в DayPlan секцию с ТОЧНЫМ числом:
-  ```
-  **Рассинхрон веток:** N коммитов на develop (не на main), M коммитов на main (не на develop). Команда для синхронизации: «мержи на прод».
-  ```
-- Если коммитов с `+` нет → не включать секцию (ветки синхронизированы)
-
-> Сценарий merge: PROCESSES.md § 4.2. Merge выполняется ТОЛЬКО по команде пользователя.
+<!-- YOUR CUSTOM CHECKS HERE -->
 
 ### 3b. Inbox Triage (заметки за вчера)
 
@@ -137,7 +92,7 @@ git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:
 
 - Проверь `DS-strategy/inbox/fleeting-notes.md` — есть ли **жирные** заметки
 - Если есть (≥1) — выполни мини-триаж inline:
-  1. Классифицируй каждую жирную заметку по 7 категориям: НЭП / Задача / Знание / Черновик / Идея 🔄 / Личные данные / Шум
+  1. Классифицируй каждую жирную заметку по 7 категориям: НЭП / Задача / Знание доменное / Знание реализационное / Черновик / Личные данные / Шум
   2. Сверь с коммитами за вчера (шаг 1) — что уже сделано? (уже сделано → Шум)
   3. Сформируй секцию `📋 Inbox Triage` со всеми корзинами (включая 📝 если есть зёрна для черновиков)
   4. **НЕ** помечай заметки и **НЕ** архивируй — это делает только Note-Review
@@ -148,10 +103,10 @@ git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:
 
 На основании **итогов вчера** + **обновлённого плана недели**:
 
-- Выбери 2-4 РП из недельного плана
-- Учти carry-over со вчера (незавершённые задачи — приоритет)
+- **Carry-over из Day Close** (секция «Завтра начать с») → все РП в план без обрезки — это решение пользователя
+- Дополни из недельного плана: 2-4 фокусных РП (≥1h). Carry-over и mandatory не ограничивать
 - Учти дедлайны из WeekPlan и WORKPLAN.md репозиториев
-- Ограничь по дневному бюджету (4-6h)
+- Ограничь фокусные по дневному бюджету (4-6h)
 - Для каждого РП укажи: номер, название, бюджет, приоритет
 
 ### 5. Рекомендация
@@ -200,19 +155,17 @@ agent: Стратег
 
 ---
 
-## 📋 Inbox Triage (DD мес)
+## Разбор заметок (N)
 
 > Источник: Note-Review (вчера) или мини-триаж (Day-Plan).
 > Секция включается ТОЛЬКО если есть заметки для разбора.
+> Неразобранное переносится в следующий DayPlan автоматически.
 
-### ✅ Архив (отработано)
-- ...
-
-### 📌 Предложения в РП
-- ...
-
-### ❓ На решение
-- ...
+| Заметка | Тип | Предложение | ✅ |
+|---------|-----|-------------|---|
+| «текст» | НЭП | → Dissatisfactions.md | [ ] |
+| «текст» | Задача | → WeekPlan | [ ] |
+| «текст» | Черновик | → drafts/X.md (согласовать) | [ ] |
 
 ---
 
@@ -232,4 +185,3 @@ agent: Стратег
 ```
 
 Результат: обновлённый WeekPlan + DayPlan в `current/` с итогами вчера и планом на сегодня.
->>>>>>> upstream/main
