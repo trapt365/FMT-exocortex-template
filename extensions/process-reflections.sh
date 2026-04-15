@@ -55,15 +55,33 @@ if [ ! -d "$JPR_DIR" ]; then
     exit 0
 fi
 
-AUDIO_FILES=("$JPR_DIR"/*.m4a)
-if [ ! -f "${AUDIO_FILES[0]}" ]; then
+# Идемпотентность: трекаем обработанные файлы
+PROCESSED_LOG="$HOME/.local/state/exocortex/reflections-processed.log"
+mkdir -p "$(dirname "$PROCESSED_LOG")"
+touch "$PROCESSED_LOG"
+
+# Фильтруем только необработанные файлы
+ALL_AUDIO=("$JPR_DIR"/*.m4a)
+if [ ! -f "${ALL_AUDIO[0]}" ]; then
     echo "Нет .m4a файлов в $JPR_DIR"
     exit 0
 fi
 
-echo "Найдено файлов: ${#AUDIO_FILES[@]}"
+AUDIO_FILES=()
+for f in "${ALL_AUDIO[@]}"; do
+    if ! grep -qF "$(basename "$f")" "$PROCESSED_LOG" 2>/dev/null; then
+        AUDIO_FILES+=("$f")
+    fi
+done
 
-# 2. Транскрибировать все файлы
+if [ ${#AUDIO_FILES[@]} -eq 0 ]; then
+    echo "Все ${#ALL_AUDIO[@]} файлов уже обработаны"
+    exit 0
+fi
+
+echo "Найдено файлов: ${#ALL_AUDIO[@]}, новых: ${#AUDIO_FILES[@]}"
+
+# 2. Транскрибировать новые файлы
 ALL_TRANSCRIPTS=""
 TEMP_DIR=$(mktemp -d /tmp/reflections-XXXXX)
 
@@ -221,6 +239,11 @@ if [ -f "$FLEETING" ]; then
     echo "$ALL_TRANSCRIPTS" >> "$FLEETING"
     echo "  Полный транскрипт → fleeting-notes.md"
 fi
+
+# 7. Отметить файлы как обработанные
+for audio in "${AUDIO_FILES[@]}"; do
+    echo "$TARGET_DATE/$(basename "$audio")" >> "$PROCESSED_LOG"
+done
 
 echo ""
 echo "Готово: ${#AUDIO_FILES[@]} файлов обработано → $DAILY_NOTE"
