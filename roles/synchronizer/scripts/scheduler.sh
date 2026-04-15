@@ -56,6 +56,7 @@ get_role_runner() {
 
 STRATEGIST_SH="$(get_role_runner strategist)"
 EXTRACTOR_SH="$(get_role_runner extractor)"
+SCOUT_SH="$(get_role_runner scout)"
 
 # Текущее время
 HOUR=$(date +%H)
@@ -226,6 +227,17 @@ dispatch() {
             fi
             ran=1
         fi
+    fi
+
+    # --- Разведчик: knowledge-gaps (nightly, 22:00+) ---
+    if (( 10#$HOUR >= 22 )) && ! ran_today "scout-knowledge-gaps"; then
+        log "→ scout knowledge-gaps (hour=$HOUR)"
+        if timeout "$TASK_TIMEOUT_LONG" "$SCOUT_SH" knowledge-gaps >> "$LOG_FILE" 2>&1; then
+            mark_done "scout-knowledge-gaps"
+        else
+            log "WARN: scout knowledge-gaps failed (will retry next dispatch)"
+        fi
+        ran=1
     fi
 
     # --- Синхронизатор: code-scan (ежедневно) ---

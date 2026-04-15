@@ -1,0 +1,16 @@
+# Role manifest — Разведчик (R3)
+# Source-of-truth: DP.ROLE.001 §3.2
+# Contract: roles/ROLE-CONTRACT.md
+
+name: scout
+id: R3
+type: agential
+display_name: "Разведчик"
+
+runner: scripts/scout.sh
+
+install:
+  auto: false
+  priority: 3
+
+notify_template: scout.sh
