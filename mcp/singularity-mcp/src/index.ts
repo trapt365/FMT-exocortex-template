@@ -131,7 +131,7 @@ function formatTask(task: Task, projectName?: string): string {
 
 const server = new McpServer({
   name: "singularity-mcp",
-  version: "0.1.0",
+  version: "0.3.0",
 });
 
 // Cache projects for name resolution
@@ -466,6 +466,262 @@ server.tool(
           text: `✅ Задача удалена (ID: ${taskId})`,
         },
       ],
+    };
+  }
+);
+
+// --- Habit Types ---
+
+interface Habit {
+  id: string;
+  title: string;
+  description: string;
+  color: string;
+  order: number;
+  status: number; // 0=active, 2=archived
+  removed: boolean;
+}
+
+interface HabitListResponse {
+  habits: Habit[];
+}
+
+interface HabitProgress {
+  id: string;
+  habit: string;
+  date: string;
+  progress: number; // 0=not done, 1=done, 2=skipped
+}
+
+interface HabitProgressListResponse {
+  habitProgresses: HabitProgress[];
+}
+
+const HABIT_STATUS_LABELS: Record<number, string> = {
+  0: "активна",
+  2: "архивирована",
+};
+
+const PROGRESS_LABELS: Record<number, string> = {
+  0: "не сделано",
+  1: "сделано",
+  2: "пропущено",
+};
+
+function formatHabit(habit: Habit): string {
+  const status = HABIT_STATUS_LABELS[habit.status ?? 0] ?? `${habit.status}`;
+  return `**${habit.title}** (id: ${habit.id})\n  Статус: ${status} | Цвет: ${habit.color} | Порядок: ${habit.order}${habit.description ? `\n  Описание: ${habit.description.slice(0, 200)}` : ""}`;
+}
+
+// Tool: list-habits
+server.tool(
+  "list-habits",
+  "Список привычек из SingularityApp. По умолчанию только активные.",
+  {
+    includeArchived: z
+      .boolean()
+      .optional()
+      .describe("Включить архивированные привычки (status=2)"),
+  },
+  async ({ includeArchived }) => {
+    const data = await apiRequest<HabitListResponse>("/habit", {
+      maxCount: "100",
+    });
+
+    let habits = data.habits.filter((h) => !h.removed);
+    if (!includeArchived) {
+      habits = habits.filter((h) => !h.status || h.status === 0);
+    }
+    habits.sort((a, b) => a.order - b.order);
+
+    const lines: string[] = [`## Привычки (${habits.length})\n`];
+    for (const habit of habits) {
+      lines.push(formatHabit(habit));
+      lines.push("");
+    }
+
+    return {
+      content: [{ type: "text" as const, text: lines.join("\n") }],
+    };
+  }
+);
+
+// Tool: create-habit
+server.tool(
+  "create-habit",
+  "Создать привычку в SingularityApp.",
+  {
+    title: z.string().describe("Название привычки"),
+    description: z.string().optional().describe("Описание привычки"),
+    color: z
+      .enum([
+        "red", "pink", "purple", "deepPurple", "indigo", "lightBlue",
+        "cyan", "teal", "green", "lightGreen", "lime", "yellow",
+        "amber", "orange", "deepOrange", "brown", "grey", "blueGrey",
+      ])
+      .optional()
+      .describe("Цвет привычки"),
+    order: z.number().optional().describe("Порядок отображения"),
+  },
+  async ({ title, description, color, order }) => {
+    const body: Record<string, unknown> = { title };
+    if (description !== undefined) body.description = description;
+    if (color !== undefined) body.color = color;
+    if (order !== undefined) body.order = order;
+
+    const habit = await apiRequest<Habit>("/habit", undefined, {
+      method: "POST",
+      body,
+    });
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Привычка создана\n\n${formatHabit(habit)}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: update-habit
+server.tool(
+  "update-habit",
+  "Обновить привычку в SingularityApp.",
+  {
+    habitId: z.string().describe("ID привычки"),
+    title: z.string().optional().describe("Новое название"),
+    description: z.string().optional().describe("Новое описание"),
+    color: z
+      .enum([
+        "red", "pink", "purple", "deepPurple", "indigo", "lightBlue",
+        "cyan", "teal", "green", "lightGreen", "lime", "yellow",
+        "amber", "orange", "deepOrange", "brown", "grey", "blueGrey",
+      ])
+      .optional()
+      .describe("Новый цвет"),
+    status: z.number().optional().describe("Статус: 0=активна, 2=архивирована"),
+  },
+  async ({ habitId, title, description, color, status }) => {
+    const body: Record<string, unknown> = {};
+    if (title !== undefined) body.title = title;
+    if (description !== undefined) body.description = description;
+    if (color !== undefined) body.color = color;
+    if (status !== undefined) body.status = status;
+
+    const habit = await apiRequest<Habit>(`/habit/${habitId}`, undefined, {
+      method: "PATCH",
+      body,
+    });
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `✅ Привычка обновлена\n\n${formatHabit(habit)}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: log-habit-progress
+server.tool(
+  "log-habit-progress",
+  "Записать прогресс по привычке за дату (done/skip/reset).",
+  {
+    habitId: z.string().describe("ID привычки"),
+    date: z.string().describe("Дата в формате YYYY-MM-DD"),
+    progress: z
+      .enum(["done", "skip", "reset"])
+      .describe("done=сделано (1), skip=пропущено (2), reset=сбросить (0)"),
+  },
+  async ({ habitId, date, progress }) => {
+    const PROGRESS_MAP: Record<string, number> = { done: 1, skip: 2, reset: 0 };
+    const body = {
+      habit: habitId,
+      date,
+      progress: PROGRESS_MAP[progress],
+    };
+
+    const result = await apiRequest<HabitProgress>("/habit-progress", undefined, {
+      method: "POST",
+      body,
+    });
+    const label: Record<string, string> = {
+      done: "сделано ✅",
+      skip: "пропущено ⏭️",
+      reset: "сброшено 🔄",
+    };
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `${label[progress]} — привычка ${habitId} за ${date}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: get-habit-progress
+server.tool(
+  "get-habit-progress",
+  "Получить прогресс по привычкам за период.",
+  {
+    habitId: z.string().optional().describe("ID привычки (если не указан — все привычки)"),
+    startDate: z.string().describe("Начало периода YYYY-MM-DD"),
+    endDate: z.string().describe("Конец периода YYYY-MM-DD"),
+  },
+  async ({ habitId, startDate, endDate }) => {
+    const params: Record<string, string> = {
+      startDate,
+      endDate,
+      maxCount: "1000",
+    };
+    if (habitId) params.habit = habitId;
+
+    const data = await apiRequest<HabitProgressListResponse>(
+      "/habit-progress",
+      params
+    );
+
+    // Group by habit
+    const byHabit = new Map<string, HabitProgress[]>();
+    for (const p of data.habitProgresses) {
+      const list = byHabit.get(p.habit) ?? [];
+      list.push(p);
+      byHabit.set(p.habit, list);
+    }
+
+    // Get habit names
+    const habitsData = await apiRequest<HabitListResponse>("/habit", {
+      maxCount: "100",
+    });
+    const habitNames = new Map(habitsData.habits.map((h) => [h.id, h.title]));
+
+    const lines: string[] = [
+      `## Прогресс привычек ${startDate} — ${endDate}\n`,
+    ];
+
+    for (const [hId, records] of byHabit) {
+      const name = habitNames.get(hId) ?? hId;
+      const done = records.filter((r) => r.progress === 1).length;
+      const skip = records.filter((r) => r.progress === 2).length;
+      lines.push(`**${name}**: ${done} done, ${skip} skip`);
+      records.sort((a, b) => a.date.localeCompare(b.date));
+      for (const r of records) {
+        const label = PROGRESS_LABELS[r.progress] ?? `${r.progress}`;
+        lines.push(`  ${r.date}: ${label}`);
+      }
+      lines.push("");
+    }
+
+    if (byHabit.size === 0) {
+      lines.push("Нет записей за указанный период.");
+    }
+
+    return {
+      content: [{ type: "text" as const, text: lines.join("\n") }],
     };
   }
 );
