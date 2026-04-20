@@ -244,7 +244,7 @@ FMT-exocortex-template/
 #### Что делает setup.sh
 
 1. Форкает шаблон → твой GitHub аккаунт
-2. Подставляет 7 плейсхолдеров (`{{GITHUB_USER}}`, `/home/trapt22/IWE` и др.)
+2. Подставляет 7 плейсхолдеров (`trapt365`, `/home/trapt22/IWE` и др.)
 3. Копирует `CLAUDE.md` → корень рабочей директории
 4. Копирует `memory/*.md` → `~/.claude/projects/.../memory/`
 5. Создаёт `DS-strategy/` из `seed/strategy/` (отдельный приватный репо)

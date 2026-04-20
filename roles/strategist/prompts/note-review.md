@@ -3,12 +3,12 @@
 
 ## Контекст
 
-- **Заметки:** /home/trapt22/IWE/DS-strategy/inbox/[fleeting-notes.md](https://github.com/{{GITHUB_USER}}/DS-strategy/blob/main/inbox/fleeting-notes.md)
+- **Заметки:** /home/trapt22/IWE/DS-strategy/inbox/[fleeting-notes.md](https://github.com/trapt365/DS-strategy/blob/main/inbox/fleeting-notes.md)
 - **НЭП:** /home/trapt22/IWE/DS-strategy/docs/Dissatisfactions.md
 - **Стратегия:** /home/trapt22/IWE/DS-strategy/docs/Strategy.md
 - **План недели:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
 - **Inbox Экстрактора:** /home/trapt22/IWE/DS-strategy/inbox/captures.md
-- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
+- **MEMORY:** ~/.claude/projects/-home-trapt22-IWE/memory/MEMORY.md
 
 ## Предусловие
 
