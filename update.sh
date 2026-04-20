@@ -331,19 +331,8 @@ if [ -f "$ENV_FILE" ]; then
             declare "ENV_$key=$value"
         done < "$ENV_FILE"
 
-        # Substitute in ALL manifest files (not just new/updated) to fix stale placeholders
         PLACEHOLDER_HIT=0
-        ALL_MANIFEST_FILES=()
-        while IFS='|' read -r mpath _; do
-            [ -n "$mpath" ] && ALL_MANIFEST_FILES+=("$mpath")
-        done < <(python3 -c "
-import json, sys
-with open('$MANIFEST') as f:
-    data = json.load(f)
-for entry in data.get('files', []):
-    print(entry['path'] + '|')
-" 2>/dev/null || grep '"path"' "$MANIFEST" | sed 's/.*"path"[[:space:]]*:[[:space:]]*"//;s/".*//' | while read -r p; do echo "$p|"; done)
-        for f in "${ALL_MANIFEST_FILES[@]}"; do
+        for f in "${NEW_FILES[@]}" "${UPDATED_FILES[@]}"; do
             filepath="$SCRIPT_DIR/$f"
             [ -f "$filepath" ] || continue
 

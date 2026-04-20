@@ -1,3 +1,7 @@
+---
+valid_from: 2026-04-07
+originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+---
 # Протокол Open (ОРЗ-фрактал)
 
 > **Два масштаба:** День и Сессия. Триггер определяет масштаб.
@@ -77,9 +81,9 @@
 
 **Шаг 2.** Дождаться согласования.
 
-**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`, например DS-strategy) — прочитать. Иерархия доверия: код → документы → WP context.
+**Шаг 3.** Определить файлы/репо. Context file (`<governance-repo>/inbox/WP-{N}*.md`, например DS-my-strategy) — прочитать. Иерархия доверия: код → документы → WP context.
 
-**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log` (например DS-strategy): `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
+**Шаг 4.** Регистрация в `<governance-repo>/inbox/open-sessions.log` (например DS-my-strategy): `YYYY-MM-DD HH:MM | WP-N | модель | описание`. Исключения — не регистрировать.
 
 **EXTENSION POINT:** Проверить `extensions/protocol-open.after.md`. Если существует → `Read` и выполнить.
 

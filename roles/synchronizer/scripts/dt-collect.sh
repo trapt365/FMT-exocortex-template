@@ -142,7 +142,7 @@ print(json.dumps(result))
 }
 
 # ============================================================
-# 2. Git Stats (все репо в ~/IWE/)
+# 2. Git Stats (все репо в /home/trapt22/IWE/)
 # ============================================================
 
 collect_git() {
@@ -150,7 +150,7 @@ collect_git() {
 import subprocess, json, os
 from datetime import datetime, timedelta
 
-workspace = os.path.expanduser('~/IWE')
+workspace = os.path.expanduser('/home/trapt22/IWE')
 repos = []
 for name in sorted(os.listdir(workspace)):
     path = os.path.join(workspace, name)
@@ -230,7 +230,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_sessions() {
-    local SESSION_LOG="$WORKSPACE/DS-agent-workspace/scheduler/open-sessions.log"
+    local SESSION_LOG="$WORKSPACE/DS-strategy/inbox/open-sessions.log"
 
     python3 -c "
 import json, os, re
@@ -261,7 +261,7 @@ if os.path.exists(log_path):
 
 # Also count from git log (more reliable — sessions leave commits)
 import subprocess
-workspace = os.path.expanduser('~/IWE')
+workspace = os.path.expanduser('/home/trapt22/IWE')
 git_sessions_7d = 0
 for name in os.listdir(workspace):
     path = os.path.join(workspace, name)
@@ -540,7 +540,7 @@ collect_pack() {
     python3 -c "
 import json, os, re
 
-workspace = os.path.expanduser('~/IWE')
+workspace = os.path.expanduser('/home/trapt22/IWE')
 pack_stats = {}
 total_md = 0
 total_entities = 0
