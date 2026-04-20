@@ -14,11 +14,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$HOME/.local/state/exocortex"
-LOG_DIR="$HOME/logs/synchronizer"
-STRATEGY_DIR="$HOME/IWE/DS-strategy"
+LOG_DIR="/home/trapt22/logs/synchronizer"
+STRATEGY_DIR="/home/trapt22/IWE/DS-strategy"
 
 # Agent Workspace: если существует — отчёты идут туда
-AGENT_WORKSPACE="$HOME/IWE/DS-agent-workspace"
+AGENT_WORKSPACE="/home/trapt22/IWE/DS-agent-workspace"
 if [ -d "$AGENT_WORKSPACE/.git" ]; then
     REPORT_DIR="$AGENT_WORKSPACE/scheduler/reports"
     ARCHIVE_DIR="$AGENT_WORKSPACE/scheduler/reports/archive"
@@ -41,7 +41,7 @@ DRY_RUN=false
 
 REPORT_FILE="$REPORT_DIR/SchedulerReport $DATE.md"
 SCHEDULER_LOG="$LOG_DIR/scheduler-$DATE.log"
-STRATEGIST_LOG="$HOME/logs/strategist/$DATE.log"
+STRATEGIST_LOG="/home/trapt22/logs/strategist/$DATE.log"
 
 mkdir -p "$ARCHIVE_DIR"
 
@@ -225,7 +225,7 @@ $warnings
 **Что делать:**
 "
         if echo "$warnings" | grep -q "push failed" 2>/dev/null; then
-            report+="- **push failed:** Mac был оффлайн. Запусти \`cd $HOME/IWE/DS-strategy && git pull --rebase && git push\`
+            report+="- **push failed:** Mac был оффлайн. Запусти \`cd /home/trapt22/IWE/DS-strategy && git pull --rebase && git push\`
 "
         fi
     else

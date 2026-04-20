@@ -34,7 +34,7 @@ STATE_DIR="$HOME/.local/state/exocortex"
 LOG_DIR="$HOME/logs/synchronizer"
 LOG_FILE="$LOG_DIR/scheduler-$(date +%Y-%m-%d).log"
 
-ROLES_DIR="$HOME/IWE/DS-exocortex/roles"
+ROLES_DIR="/home/trapt22/IWE/FMT-exocortex-template/roles"
 NOTIFY_SH="$SCRIPT_DIR/notify.sh"
 
 # Таймаут на задачи (сек): предотвращает блокировку dispatch зависшей задачей
@@ -56,7 +56,6 @@ get_role_runner() {
 
 STRATEGIST_SH="$(get_role_runner strategist)"
 EXTRACTOR_SH="$(get_role_runner extractor)"
-SCOUT_SH="$(get_role_runner scout)"
 
 # Текущее время
 HOUR=$(date +%H)
@@ -135,7 +134,7 @@ cleanup_state() {
 # Разделяет архивацию (мгновенно) и генерацию (15+ мин Claude Code).
 # Гарантирует: даже если генерация ещё не началась, старый план не висит в current/.
 pre_archive_dayplan() {
-    local strategy_dir="$HOME/IWE/DS-strategy"
+    local strategy_dir="/home/trapt22/IWE/DS-strategy"
     local archive_dir="$strategy_dir/archive/day-plans"
     local moved=0
 
@@ -227,17 +226,6 @@ dispatch() {
             fi
             ran=1
         fi
-    fi
-
-    # --- Разведчик: knowledge-gaps (nightly, 22:00+) ---
-    if (( 10#$HOUR >= 22 )) && ! ran_today "scout-knowledge-gaps"; then
-        log "→ scout knowledge-gaps (hour=$HOUR)"
-        if timeout "$TASK_TIMEOUT_LONG" "$SCOUT_SH" knowledge-gaps >> "$LOG_FILE" 2>&1; then
-            mark_done "scout-knowledge-gaps"
-        else
-            log "WARN: scout knowledge-gaps failed (will retry next dispatch)"
-        fi
-        ran=1
     fi
 
     # --- Синхронизатор: code-scan (ежедневно) ---

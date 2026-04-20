@@ -14,7 +14,7 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 WORKSPACE="$HOME/IWE/DS-strategy"
 PROMPTS_DIR="$REPO_DIR/prompts"
 LOG_DIR="$HOME/logs/strategist"
-CLAUDE_PATH="$HOME/.npm-global/bin/claude"
+CLAUDE_PATH="/home/trapt22/.local/bin/claude"
 CLAUDE_TIMEOUT=1800  # 30 мин — защита от зависания Claude CLI
 
 # macOS не имеет GNU timeout — используем perl fallback
