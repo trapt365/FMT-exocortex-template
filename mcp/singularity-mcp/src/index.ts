@@ -103,7 +103,7 @@ const CHECK_LABELS: Record<number, string> = {
 
 function formatTask(task: Task, projectName?: string): string {
   const parts: string[] = [];
-  const priority = PRIORITY_LABELS[task.priority] ?? `${task.priority}`;
+  const priority = task.priority != null ? (PRIORITY_LABELS[task.priority] ?? `${task.priority}`) : "обычный";
   const status = task.checked != null ? (CHECK_LABELS[task.checked] ?? `${task.checked}`) : "не выполнено";
 
   parts.push(`**${task.title}** (id: ${task.id})`);
