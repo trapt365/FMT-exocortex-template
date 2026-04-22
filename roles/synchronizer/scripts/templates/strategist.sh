@@ -2,8 +2,8 @@
 # Шаблон уведомлений: Стратег (R1)
 # Вызывается из notify.sh через source
 
-STRATEGY_DIR="/home/trapt22/IWE/DS-strategy/current"
-STRATEGY_REPO_DIR="/home/trapt22/IWE/DS-strategy"
+STRATEGY_DIR=""/home/trapt22/IWE"/DS-strategy/current"
+STRATEGY_REPO_DIR=""/home/trapt22/IWE"/DS-strategy"
 DATE=$(date +%Y-%m-%d)
 
 find_strategy_file() {
@@ -27,19 +27,6 @@ table_to_list() {
     local file="$1"
     local section="$2"
 
-    # Сначала пробуем новый формат (список с - ⚫/🔴/🟡/🟢)
-    local list_items
-    list_items=$(sed -n '/<summary>.*'"${section}"'/,/<\/details>/p' "$file" \
-        | grep '^- [⚫🔴🟡🟢]' \
-        | sed 's/\*\*//g' \
-        | sed 's/<[^>]*>//g')
-
-    if [ -n "$list_items" ]; then
-        printf '%s\n' "$list_items"
-        return
-    fi
-
-    # Fallback: старый формат (markdown-таблица)
     sed -n "/^## ${section}/,/^---/p" "$file" \
         | grep '^|' \
         | tail -n +3 \
@@ -90,25 +77,8 @@ build_message() {
             local plan_items
             plan_items=$(table_to_list "$file" "План на сегодня")
 
-            # Извлечь строку бюджета
-            local budget_line
-            budget_line=$(grep '^\*\*Бюджет дня' "$file" | head -1 | sed 's/\*\*//g')
-
-            # Извлечь carry-over
-            local carry_over
-            carry_over=$(grep '^Carry-over:' "$file" | head -1)
-
             printf "<b>📋 %s</b>\n\n" "$title"
-            [ -n "$carry_over" ] && printf "%s\n\n" "$carry_over"
-            printf "<b>План:</b>\n%s\n" "$plan_items"
-            [ -n "$budget_line" ] && printf "\n%s" "$budget_line"
-
-            # Извлечь «Требует внимания» (до 5 пунктов)
-            local attention
-            attention=$(sed -n '/<summary>.*Требует внимания/,/<\/details>/p' "$file" \
-                | grep '^[0-9]' | head -5 \
-                | sed 's/\*\*//g' | sed 's/<[^>]*>//g')
-            [ -n "$attention" ] && printf "\n\n<b>Требует внимания:</b>\n%s" "$attention"
+            printf "<b>План:</b>\n%s" "$plan_items"
             ;;
 
         "session-prep")

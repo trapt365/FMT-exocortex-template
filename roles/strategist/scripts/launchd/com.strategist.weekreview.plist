@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/home/trapt22/IWE/FMT-exocortex-template/roles/strategist/scripts/strategist.sh</string>
+        <string>"/home/trapt22/IWE"/FMT-exocortex-template/roles/strategist/scripts/strategist.sh</string>
         <string>week-review</string>
     </array>
 

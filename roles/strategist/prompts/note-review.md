@@ -3,12 +3,12 @@
 
 ## Контекст
 
-- **Заметки:** /home/trapt22/IWE/DS-strategy/inbox/[fleeting-notes.md](https://github.com/trapt365/DS-strategy/blob/main/inbox/fleeting-notes.md)
-- **НЭП:** /home/trapt22/IWE/DS-strategy/docs/Dissatisfactions.md
-- **Стратегия:** /home/trapt22/IWE/DS-strategy/docs/Strategy.md
-- **План недели:** /home/trapt22/IWE/DS-strategy/current/WeekPlan W*.md
-- **Inbox Экстрактора:** /home/trapt22/IWE/DS-strategy/inbox/captures.md
-- **MEMORY:** ~/.claude/projects/-home-trapt22-IWE/memory/MEMORY.md
+- **Заметки:** "/home/trapt22/IWE"/DS-strategy/inbox/[fleeting-notes.md](https://github.com//DS-strategy/blob/main/inbox/fleeting-notes.md)
+- **НЭП:** "/home/trapt22/IWE"/DS-strategy/docs/Dissatisfactions.md
+- **Стратегия:** "/home/trapt22/IWE"/DS-strategy/docs/Strategy.md
+- **План недели:** "/home/trapt22/IWE"/DS-strategy/current/WeekPlan W*.md
+- **Inbox Экстрактора:** "/home/trapt22/IWE"/DS-strategy/inbox/captures.md
+- **MEMORY:** ~/.claude/projects/"-home-trapt22-IWE"/memory/MEMORY.md
 
 ## Предусловие
 
@@ -47,7 +47,7 @@
 - `DS-strategy/current/WeekPlan W*.md` — РП и приоритеты недели
 - `DS-strategy/docs/Strategy.md` — фокусы года, приоритеты месяца
 - MEMORY.md — статусы РП
-- QA-отчёт бота: `DS-agent-workspace/scheduler/feedback-triage/` (последний по дате) — **структурированный отчёт** из feedback_triage DB (авто-классификация ботом). Замечания (✏️) и urgent (high/critical) — в начале файла. Real-time алерты уже отправлены ботом → Note-Review только проверяет кластеры (≥3 в одном кластере → пометить)
+- (опционально, если настроены агенты-сборщики QA) Структурированные QA-отчёты в `"/home/trapt22/IWE"/<agent-workspace>/<scheduler>/<reports>/` — последний по дате: замечания (✏️) и urgent (high/critical) в начале файла. Кластеры (≥3 в одном кластере) → пометить. Если агентов нет — пропустить шаг.
 
 #### 3. Классифицировать каждую заметку
 
@@ -73,7 +73,7 @@
 - **Личные данные → personal/:** контакт → `personal/contacts.md`, аккаунт/URL → `personal/accounts.md`, токен/пароль → `personal/secrets.md`, прочее → `personal/reference.md`
 
 **Проверка актуальности (обязательно перед классификацией):**
-- Сверь заметку с коммитами за сегодня (`git log --since="00:00" --all --oneline` по всем /home/trapt22/IWE/ репо) и текущим WeekPlan
+- Сверь заметку с коммитами за сегодня (`git log --since="00:00" --all --oneline` по всем "/home/trapt22/IWE"/ репо) и текущим WeekPlan
 - Если задача из заметки **уже сделана** (есть коммит или РП done) → Шум (зачеркнуть), не тянуть в план
 - Если проблема из заметки **уже решена** → Шум
 - Если заметка ссылается на ситуацию, которая **изменилась** за день → оценить с учётом нового контекста

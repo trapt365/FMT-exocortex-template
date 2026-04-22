@@ -13,10 +13,10 @@ set -e
 # Конфигурация
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE="/home/trapt22/IWE"
+WORKSPACE=""/home/trapt22/IWE""
 PROMPTS_DIR="$REPO_DIR/prompts"
 LOG_DIR="/home/trapt22/logs/extractor"
-CLAUDE_PATH="/home/trapt22/.local/bin/claude"
+CLAUDE_PATH=""
 ENV_FILE="/home/trapt22/.config/aist/env"
 
 # AI CLI: переопределение через переменные окружения (см. strategist.sh)

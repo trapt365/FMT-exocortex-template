@@ -21,8 +21,8 @@ version: 1.0.0
 ### 2. Показать текущее состояние кастомизаций
 
 ```bash
-ls /home/trapt22/IWE/extensions/*.md 2>/dev/null || echo "(нет расширений)"
-cat /home/trapt22/IWE/params.yaml 2>/dev/null
+ls "/home/trapt22/IWE"/extensions/*.md 2>/dev/null || echo "(нет расширений)"
+cat "/home/trapt22/IWE"/params.yaml 2>/dev/null
 ```
 
 Сообщить:
