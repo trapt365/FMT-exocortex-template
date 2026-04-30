@@ -194,8 +194,8 @@ dispatch() {
         ran=1
     fi
 
-    # --- Стратег: morning (04:00-21:59) ---
-    if (( 10#$HOUR >= 4 && 10#$HOUR < 22 )) && ! ran_today "strategist-morning"; then
+    # --- Стратег: morning (05:00-21:59) ---
+    if (( 10#$HOUR >= 5 && 10#$HOUR < 22 )) && ! ran_today "strategist-morning"; then
         log "→ strategist morning (catch-up: hour=$HOUR)"
         if timeout "$TASK_TIMEOUT_LONG" "$STRATEGIST_SH" morning >> "$LOG_FILE" 2>&1; then
             mark_done "strategist-morning"
