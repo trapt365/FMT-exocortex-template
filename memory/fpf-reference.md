@@ -1,10 +1,20 @@
 ---
 valid_from: 2026-04-06
 originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
+
+type: reference
+horizon: warm
+domains: [reference]
+status: active
+owner: user
+schema_version: 1
+
+name: "fpf-reference"
+description: "Операционный файл памяти IWE"
 ---
 # FPF (First Principles Framework) — справочник
 
-> Источник: `/home/trapt22/IWE/FPF/FPF-Spec.md` (4.6 MB, ~50000 строк)
+> Источник: `{{HOME_DIR}}/IWE/FPF/FPF-Spec.md` (4.6 MB, ~50000 строк)
 
 ## Когда читать FPF
 
@@ -78,4 +88,4 @@ originSessionId: 9a0e726a-951e-4408-9e02-94d7eeffbf74
 
 ## Обновление
 
-Периодически: `cd /home/trapt22/IWE/FPF && git pull`
+Периодически: `cd {{HOME_DIR}}/IWE/FPF && git pull`

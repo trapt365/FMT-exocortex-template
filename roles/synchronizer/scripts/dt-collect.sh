@@ -48,7 +48,8 @@ if [ -f "$ENV_FILE" ]; then
 fi
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [dt-collect] $1" | tee -a "$LOG_FILE"
+    # tee → stderr, чтобы лог не попадал в $(collect_*) и не ломал JSON.
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [dt-collect] $1" | tee -a "$LOG_FILE" >&2
 }
 
 log "=== DT Collect Started ==="
@@ -142,7 +143,7 @@ print(json.dumps(result))
 }
 
 # ============================================================
-# 2. Git Stats (все репо в "/home/trapt22/IWE"/)
+# 2. Git Stats (все репо в {{WORKSPACE_DIR}}/)
 # ============================================================
 
 collect_git() {
@@ -150,7 +151,7 @@ collect_git() {
 import subprocess, json, os
 from datetime import datetime, timedelta
 
-workspace = os.path.expanduser('"/home/trapt22/IWE"')
+workspace = os.path.expanduser('{{WORKSPACE_DIR}}')
 repos = []
 for name in sorted(os.listdir(workspace)):
     path = os.path.join(workspace, name)
@@ -261,7 +262,7 @@ if os.path.exists(log_path):
 
 # Also count from git log (more reliable — sessions leave commits)
 import subprocess
-workspace = os.path.expanduser('"/home/trapt22/IWE"')
+workspace = os.path.expanduser('{{WORKSPACE_DIR}}')
 git_sessions_7d = 0
 for name in os.listdir(workspace):
     path = os.path.join(workspace, name)
@@ -493,7 +494,8 @@ def parse_weekplan_budget_for_date(date_str, gov_dir):
         os.path.join(gov_dir, 'archive', 'week-plans', 'WeekPlan W*.md'),
         os.path.join(gov_dir, 'current', 'WeekPlan W*.md'),
     ]
-    section_re = re.compile(rf'Итоги\s+\S+\s+{day_num}\s+{month_ru}')
+    # \S+ матчил "W16:" в "Итоги W16: 13 апр" раньше дневного "Итоги пн 13 апр" — block-split bug
+    section_re = re.compile(rf'Итоги\s+(?:пн|вт|ср|чт|пт|сб|вс)\s+{day_num}\s+{month_ru}', re.IGNORECASE)
     for pat in wp_patterns:
         for wp in glob.glob(pat):
             with open(wp) as f:
@@ -618,7 +620,7 @@ collect_pack() {
     python3 -c "
 import json, os, re
 
-workspace = os.path.expanduser('"/home/trapt22/IWE"')
+workspace = os.path.expanduser('{{WORKSPACE_DIR}}')
 pack_stats = {}
 total_md = 0
 total_entities = 0
@@ -716,9 +718,7 @@ print(json.dumps(result))
 # ============================================================
 
 collect_scheduler_reports() {
-    local AGENT_WS="${AGENT_WORKSPACE:-$WORKSPACE/DS-agent-workspace}"
-    local SCHED_SUBDIR="scheduler/scheduler-reports"
-    local REPORTS_DIR="${SCHEDULER_REPORTS_DIR:-$AGENT_WS/$SCHED_SUBDIR}"
+    local REPORTS_DIR="$WORKSPACE/DS-agent-workspace/scheduler/scheduler-reports"
 
     python3 -c "
 import json, os, re, glob
@@ -912,7 +912,7 @@ if knowledge:
     result['2_9_knowledge'] = knowledge
 
 print(json.dumps(result, indent=2, ensure_ascii=False))
-" 2>/dev/null)
+" 2>>"$LOG_FILE")
 
 if [ -z "$MERGED" ] || [ "$MERGED" = "{}" ]; then
     log "ERROR: empty merge result"

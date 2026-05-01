@@ -6,21 +6,21 @@
 
 ## Контекст
 
-- **HUB (личные планы):** /home/trapt22/IWE/DS-strategy/current/
-- **SPOKE (планы репо):** /home/trapt22/IWE/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/-home-trapt22-IWE/memory/MEMORY.md
+- **HUB (личные планы):** {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/current/
+- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
+- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
 
 ## Именование файлов в current/
 
 ```
-DS-strategy/
+{{GOVERNANCE_REPO}}/
 ├── current/
 │   ├── WeekPlan W{N} YYYY-MM-DD.md   # план недели (Пн дата)
 │   └── DayPlan YYYY-MM-DD.md         # план дня (текущая дата)
 ├── archive/                           # старые файлы
 ```
 
-В `current/` — только актуальные файлы. Старые перемещаются в `DS-strategy/archive/`.
+В `current/` — только актуальные файлы. Старые перемещаются в `{{GOVERNANCE_REPO}}/archive/`.
 
 ## Алгоритм
 
@@ -29,11 +29,11 @@ DS-strategy/
 **Стратег ОБЯЗАН** собрать коммиты за вчерашний день самостоятельно:
 
 ```bash
-# Для КАЖДОГО репо в /home/trapt22/IWE/:
-git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
+git -C {{WORKSPACE_DIR}}/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `/home/trapt22/IWE/`
+- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
 - Сгруппируй коммиты по репозиториям
 - Сопоставь коммиты с РП из недельного плана
 - Определи статус каждого затронутого РП: done / partial / not started
@@ -78,7 +78,7 @@ git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:
 
 ### 3а. Контекстные файлы РП
 
-- Прочитай `DS-strategy/inbox/WP-*.md` (все файлы с `type: wp-context`, `status: active`)
+- Прочитай `{{GOVERNANCE_REPO}}/inbox/WP-*.md` (все файлы с `type: wp-context`, `status: active`)
 - Для каждого запланированного на сегодня РП — если есть соответствующий `WP-{N}*.md`:
   - Добавь в таблицу «План на сегодня» колонку «Контекст» со ссылкой на файл
   - В секцию «Рекомендация» включи: текущее состояние из context file, следующий шаг
@@ -90,7 +90,7 @@ git -C /home/trapt22/IWE/<repo> log --since="yesterday 00:00" --until="today 00:
 > Note-Review (23:00) записывает предложения напрямую в целевые документы (WeekPlan, Dissatisfactions.md, captures.md).
 > Day-Plan проверяет, есть ли необработанные заметки, и при необходимости делает мини-триаж.
 
-- Проверь `DS-strategy/inbox/fleeting-notes.md` — есть ли **жирные** заметки
+- Проверь `{{GOVERNANCE_REPO}}/inbox/fleeting-notes.md` — есть ли **жирные** заметки
 - Если есть (≥1) — выполни мини-триаж inline:
   1. Классифицируй каждую жирную заметку по 7 категориям: НЭП / Задача / Знание доменное / Знание реализационное / Черновик / Личные данные / Шум
   2. Сверь с коммитами за вчера (шаг 1) — что уже сделано? (уже сделано → Шум)

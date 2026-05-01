@@ -11,13 +11,26 @@
 set -e
 
 # Конфигурация
+# WP-273 R5 fix (Round 5 Евгения): substituted runner живёт в .iwe-runtime/,
+# но prompts/ — read-only, должны браться из FMT через $IWE_TEMPLATE.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE=""/home/trapt22/IWE""
-PROMPTS_DIR="$REPO_DIR/prompts"
-LOG_DIR="/home/trapt22/logs/extractor"
-CLAUDE_PATH=""
-ENV_FILE="/home/trapt22/.config/aist/env"
+WORKSPACE="{{WORKSPACE_DIR}}"
+
+# PROMPTS_DIR резолв: $IWE_TEMPLATE → standard FMT → relative (legacy)
+if [ -n "${IWE_TEMPLATE:-}" ] && [ -d "$IWE_TEMPLATE/roles/extractor/prompts" ]; then
+    PROMPTS_DIR="$IWE_TEMPLATE/roles/extractor/prompts"
+elif [ -d "$WORKSPACE/FMT-exocortex-template/roles/extractor/prompts" ]; then
+    PROMPTS_DIR="$WORKSPACE/FMT-exocortex-template/roles/extractor/prompts"
+    echo "[$(date '+%H:%M:%S')] WARN: \$IWE_TEMPLATE не задана, fallback на $WORKSPACE/FMT-exocortex-template. source ~/.zshenv?" >&2
+else
+    PROMPTS_DIR="$REPO_DIR/prompts"
+    echo "[$(date '+%H:%M:%S')] WARN: legacy PROMPTS_DIR fallback на $PROMPTS_DIR (pre-WP-273). Запустите migrate-to-runtime-target.sh." >&2
+fi
+
+LOG_DIR="{{HOME_DIR}}/logs/extractor"
+CLAUDE_PATH="{{CLAUDE_PATH}}"
+ENV_FILE="{{HOME_DIR}}/.config/aist/env"
 
 # AI CLI: переопределение через переменные окружения (см. strategist.sh)
 AI_CLI="${AI_CLI:-$CLAUDE_PATH}"
@@ -47,7 +60,18 @@ notify() {
 
 notify_telegram() {
     local scenario="$1"
-    local notify_script="$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
+    # WP-273 R5 fix: notify.sh — read-only из FMT (не substituted, нет плейсхолдеров).
+    # Resolution order: $IWE_TEMPLATE → standard FMT path → runtime fallback (legacy).
+    local notify_script
+    if [ -n "${IWE_TEMPLATE:-}" ] && [ -f "$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh" ]; then
+        notify_script="$IWE_TEMPLATE/roles/synchronizer/scripts/notify.sh"
+    elif [ -f "$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh" ]; then
+        notify_script="$WORKSPACE/FMT-exocortex-template/roles/synchronizer/scripts/notify.sh"
+    elif [ -n "${IWE_RUNTIME:-}" ] && [ -f "$IWE_RUNTIME/roles/synchronizer/scripts/notify.sh" ]; then
+        notify_script="$IWE_RUNTIME/roles/synchronizer/scripts/notify.sh"
+    else
+        notify_script="$WORKSPACE/.iwe-runtime/roles/synchronizer/scripts/notify.sh"
+    fi
     if [ -f "$notify_script" ]; then
         "$notify_script" extractor "$scenario" >> "$LOG_FILE" 2>&1 || true
     fi
@@ -72,8 +96,19 @@ run_claude() {
         exit 1
     fi
 
+    # WP-273 0.29.6 R6.1** escape: build-runtime НЕ должен подменять плейсхолдеры
+    # в sed-выражениях этого runner'а (иначе runner после build ищет values вместо
+    # placeholders в промптах). Собираем двойно-фигурные токены через bash-конкатенацию.
     local prompt
-    prompt=$(cat "$command_path")
+    local _gov_repo="${IWE_GOVERNANCE_REPO:-DS-strategy}"
+    local _ws="${IWE_WORKSPACE:-$HOME/IWE}"
+    local _gh_user="${GITHUB_USER:-your-username}"
+    local _o='{''{' _c='}''}'
+    prompt=$(sed \
+        -e "s|${_o}GOVERNANCE_REPO${_c}|$_gov_repo|g" \
+        -e "s|${_o}WORKSPACE_DIR${_c}|$_ws|g" \
+        -e "s|${_o}GITHUB_USER${_c}|$_gh_user|g" \
+        "$command_path")
 
     # Добавить extra args к промпту
     if [ -n "$extra_args" ]; then
@@ -97,7 +132,7 @@ $extra_args"
     log "Completed process: $command_file"
 
     # Commit + push changes (отчёты, помеченные captures)
-    local strategy_dir="$WORKSPACE/DS-strategy"
+    local strategy_dir="$WORKSPACE/{{GOVERNANCE_REPO}}"
 
     if [ -d "$strategy_dir/.git" ]; then
         # Очистить staging area
@@ -107,14 +142,14 @@ $extra_args"
         git -C "$strategy_dir" add inbox/captures.md inbox/extraction-reports/ >> "$LOG_FILE" 2>&1 || true
         if ! git -C "$strategy_dir" diff --cached --quiet 2>/dev/null; then
             git -C "$strategy_dir" commit -m "inbox-check: extraction report $DATE" >> "$LOG_FILE" 2>&1 \
-                && log "Committed DS-strategy" \
+                && log "Committed $_gov_repo" \
                 || log "WARN: git commit failed"
         else
-            log "No new changes to commit in DS-strategy"
+            log "No new changes to commit in $_gov_repo"
         fi
 
         if ! git -C "$strategy_dir" diff --quiet origin/main..HEAD 2>/dev/null; then
-            git -C "$strategy_dir" push >> "$LOG_FILE" 2>&1 && log "Pushed DS-strategy" || log "WARN: git push failed"
+            git -C "$strategy_dir" push >> "$LOG_FILE" 2>&1 && log "Pushed $_gov_repo" || log "WARN: git push failed"
         fi
     fi
 
@@ -141,15 +176,17 @@ case "$1" in
         fi
 
         # Быстрая проверка: есть ли captures в inbox
-        CAPTURES_FILE="$WORKSPACE/DS-strategy/inbox/captures.md"
+        CAPTURES_FILE="$WORKSPACE/{{GOVERNANCE_REPO}}/inbox/captures.md"
         if [ -f "$CAPTURES_FILE" ]; then
-            PENDING=$(grep -c '^### ' "$CAPTURES_FILE" 2>/dev/null) || PENDING=0
-            PROCESSED=$(grep -c '\[processed' "$CAPTURES_FILE" 2>/dev/null) || PROCESSED=0
-            ANALYZED=$(grep -c '\[analyzed' "$CAPTURES_FILE" 2>/dev/null) || ANALYZED=0
-            ACTUAL_PENDING=$((PENDING - PROCESSED - ANALYZED))
+            # Маркеры имеют вид `[analyzed 2026-MM-DD]`, `[processed 2026-MM-DD]`, `[duplicate]`, `[defer]` —
+            # используем `\b` (word boundary), а не `\]`, чтобы ловить датированные маркеры.
+            # Старый подход (PENDING - PROCESSED - ANALYZED с `grep -c '\[analyzed'`) ловил подстроки
+            # в описаниях/цитатах → получался мультисчёт и ложные «N pending» срабатывания.
+            ACTUAL_PENDING=$(grep -E '^### ' "$CAPTURES_FILE" 2>/dev/null | grep -vE '\[(analyzed|processed|duplicate|defer)\b' | wc -l | tr -d ' ')
+            ACTUAL_PENDING=${ACTUAL_PENDING:-0}
 
             if [ "$ACTUAL_PENDING" -le 0 ]; then
-                log "SKIP: No pending captures in inbox (total=$PENDING, processed=$PROCESSED)"
+                log "SKIP: No pending captures in inbox"
                 exit 0
             fi
 

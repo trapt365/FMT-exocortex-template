@@ -34,14 +34,14 @@ GOV_REPO="${IWE_GOVERNANCE_REPO:-DS-strategy}"
 WORKSPACE="${IWE_WORKSPACE:-$HOME/IWE}"
 GOV_PATH="$WORKSPACE/$GOV_REPO"
 
-# Check if we're in governance repo (protocol-managed)
-if ! echo "$TOOL_INPUT" | grep -q 'DayPlan\|day-open\|day-close\|WeekPlan'; then
-  # Also check pwd context — look for staged DayPlan files
-  STAGED=$(cd "$GOV_PATH" 2>/dev/null && git diff --cached --name-only 2>/dev/null || echo "")
-  if ! echo "$STAGED" | grep -qE 'DayPlan|WeekPlan'; then
-    echo '{}'
-    exit 0
-  fi
+# R4.5 fix (WP-273): trigger ТОЛЬКО по staged files, НЕ по тексту команды.
+# Старая логика грепала TOOL_INPUT на «DayPlan|day-close» — false positive
+# на любой коммит файла `day-close/SKILL.md` или сообщения с «day-close».
+# Принцип: «hook trigger = artifact (staged file), не TOOL_INPUT текст» (memory/hooks-design.md).
+STAGED=$(cd "$GOV_PATH" 2>/dev/null && git diff --cached --name-only 2>/dev/null || echo "")
+if ! echo "$STAGED" | grep -qE '^current/DayPlan.*\.md$|^current/WeekPlan.*\.md$'; then
+  echo '{}'
+  exit 0
 fi
 
 # --- DayPlan Validation ---
@@ -52,12 +52,12 @@ if [ -z "$DAYPLAN" ]; then
   exit 0
 fi
 
-# Required sections (parameterized — update this list when format changes)
+# Required sections (parameterized — update this list when format changes).
+# Scout раздел опционален: проверяется отдельно ниже (см. блок "Scout").
 SECTIONS=(
   "План на сегодня"
   "Календарь"
   "IWE за ночь"
-  "Наработки Scout"
   "Разбор заметок"
   "Итоги вчера"
 )
@@ -73,7 +73,7 @@ done
 ERRORS=()
 
 # --- Ф3 Check 1: collapsible <details> блоки ---
-DETAILS_COUNT=$(grep -c '<details' "$DAYPLAN" 2>/dev/null || echo 0)
+DETAILS_COUNT=$(grep -c '<details' "$DAYPLAN" 2>/dev/null || true); DETAILS_COUNT=${DETAILS_COUNT:-0}
 if [ "$DETAILS_COUNT" -lt 3 ]; then
   ERRORS+=("Collapsible секции (<details>) < 3 найдено: $DETAILS_COUNT. DayPlan должен иметь collapsible-структуру")
 fi
@@ -85,9 +85,12 @@ if [ "$CALENDAR_CONTENT" -lt 3 ]; then
   ERRORS+=("Секция 'Календарь' пустая или слишком короткая (${CALENDAR_CONTENT} строк)")
 fi
 
-# Scout: должна содержать хотя бы упоминание находок или "нет находок"
-if ! awk '/Наработки Scout/,/^<\/details>/' "$DAYPLAN" 2>/dev/null | grep -qE 'наход|capture|статус|нет|find'; then
-  ERRORS+=("Секция 'Наработки Scout' пустая")
+# Scout: проверяется только если секция вообще присутствует в DayPlan (опциональный компонент,
+# зависит от DS-agent-workspace). Если секции нет — Scout не сконфигурирован, валидатор не блокирует.
+if grep -q "Наработки Scout" "$DAYPLAN" 2>/dev/null; then
+  if ! awk '/Наработки Scout/,/^<\/details>/' "$DAYPLAN" 2>/dev/null | grep -qE 'наход|capture|статус|нет|find|disabled|not configured'; then
+    ERRORS+=("Секция 'Наработки Scout' пустая (допустимы маркеры 'нет находок', 'disabled', 'not configured')")
+  fi
 fi
 
 # --- Ф3 Check 3: формат мультипликатора ---
