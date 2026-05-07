@@ -13,8 +13,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WORKSPACE=""/home/trapt22/IWE""
-LOG_DIR="/home/trapt22/logs/synchronizer"
+WORKSPACE="{{WORKSPACE_DIR}}"
+LOG_DIR="{{HOME_DIR}}/logs/synchronizer"
 DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_DIR/code-scan-$DATE.log"
 
@@ -34,7 +34,7 @@ discover_repos() {
 
     # Governance-репо — исключаем из сканирования
     local exclude=(
-        "DS-strategy"
+        "{{GOVERNANCE_REPO}}"
     )
 
     for dir in "$WORKSPACE"/DS-*/; do
