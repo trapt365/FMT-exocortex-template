@@ -5,6 +5,121 @@ All notable changes to FMT-exocortex-template will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.29.32] — 2026-05-06
+
+### Fixed — WP-294 race-guard, state-файл переживал сессию
+
+Верификатор 0.29.31: state-файл `.claude/state/wp-sync-<N>.done` создавался в шаге 3d, но нигде не очищался. На второй день sync для того же WP «тихо» пропускался (race-guard думал, что уже запускался). Симптом без диагностики.
+
+Фикс: race-guard проверяет mtime state-файла. Если моложе 8h — пропустить (та же сессия). Если старше — считать stale: `rm -f` и запустить заново. Проверка: `find .claude/state/wp-sync-<N>.done -mmin -480 2>/dev/null`.
+
+8h выбраны как граница «одна рабочая сессия / день». Без cron-очистки накопится ~10 файлов/день — пренебрежимо для FS, при следующем запуске любой stale-файл удаляется автоматически.
+
+## [0.29.31] — 2026-05-06
+
+### Changed — WP-294 Sync-фаза WP Gate (доводка)
+
+После 0.29.30 верификация показала: bundler + sub-agent поставлялись, но не использовались — шаг 3 в `protocol-open.md` отдавал на L3-extension, которого у пользователей нет. Дефолт перенесён внутрь шага 3, extension стал override-точкой.
+
+- **`memory/protocol-open.md` § Sync Gate переписан** — дефолтное поведение веток A (тривиально, main agent), B (≥2 related или drift → Task → `wp-sync-actualizer`), C (противоречие → «Требует внимания» Ритуала) теперь встроено в шаг 3, не требует extension. Bundler+sub-agent работают «из коробки» сразу после `update.sh`.
+- **Race-guard** — state-файл `.claude/state/wp-sync-<N>.done` предотвращает повторный sync для одного WP в одной сессии.
+- **Exit 2 в bundler** — `validate_frontmatter()` проверяет наличие двух `---` маркеров, иначе exit 2 + `[PARSE-ERROR]` в stderr. Ранее отсутствовало (контракт описан, не реализован).
+- **`extensions/protocol-open.sync.md`** (опционально, L3) — теперь чистая override-точка с шаблоном для замены sub-agent'а / порогов веток / сторонних обогащений bundle. По умолчанию не нужен.
+
+## [0.29.30] — 2026-05-06
+
+### Added — WP-294 Sync-фаза WP Gate (актуализация контекста РП при упоминании номера)
+
+Системная актуализация контекста РП при упоминании номера в новой сессии. Гибрид (вариант D): детерминированный bundler собирает связанные РП + drift-сигналы; нетривиальные случаи делегируются sub-agent'у Sonnet 4.6 с context isolation.
+
+- **`memory/protocol-open.md`** — новый шаг 3 «Sync Gate» в § WP Gate перед «→ Ритуал». EXTENSION POINT: `bash .claude/scripts/load-extensions.sh protocol-open sync`. Цель: исключить дублирование работы и ложные блокеры. При обнаружении противоречия («PASS» в одном vs «FAIL» в другом по той же метрике) — НЕ применять автоматически, поднять в «Требует внимания» Ритуала.
+- **`.claude/scripts/wp-sync-bundle.sh`** — детерминированный bundler. Парсит YAML frontmatter без yq, извлекает `related:` блок + grep тела на WP-NNN, статус из REGISTRY, git log по WP-файлам за 14 дней. Drift-детектор: связанный РП закрыт + текущий имеет открытую фазу со ссылкой; значимые коммиты (LIVE/deployed/merged/DROPPED) после `spawned:` или `updated:`. Параметризовано через `$IWE_GOVERNANCE_REPO` (template-sync-friendly).
+- **`.claude/agents/wp-sync-actualizer.md`** — sub-agent (Sonnet 4.6) с context isolation. Возвращает unified diff в текстовом формате (`---ORIGINAL---`/`---REPLACEMENT---`); НЕ редактирует напрямую. Ограничения: ≤5 Read, не выходит за рамки одного WP-context файла, противоречия → раздел «Требует внимания».
+- **`update.sh:609`** — добавлен `.claude/agents/*` в паттерн копирования (sub-agent definitions = платформа, не workspace-local).
+- **`setup/smoke-test-fresh-install.sh:193`** — `agents` убран из исключений (теперь обязательно в паттерне `update.sh:609`).
+
+### Установка для существующих пользователей
+
+После `update.sh` поведение sync-step активируется автоматически в `memory/protocol-open.md`. EXTENSION POINT работает через generic loader (WP-273), для активации L3-кастомизации создайте `extensions/protocol-open.sync.md` (см. пример в авторском IWE).
+
+## [0.29.29] — 2026-05-06
+
+### Fixed — баг-репорт пилота 0.29.28 (Евгений) — 3 бага параметризации путей
+
+- **`roles/synchronizer/scripts/dt-collect.sh:234`** — `collect_sessions()` использовал hardcoded `$WORKSPACE/DS-strategy/inbox/open-sessions.log` вместо `$GOVERNANCE_DIR`. На fresh clone с `GOVERNANCE_REPO=DS-pilot-strategy` лог писался не туда. Исправлено: `$GOVERNANCE_DIR/inbox/open-sessions.log`.
+- **`update.sh:609`** — паттерн копирования `.claude/X/*` пропускал `.claude/scripts/`. На fresh install скиллы (`day-open`, `day-close`, `month-close` и др.) звали `bash .claude/scripts/load-extensions.sh` → `No such file or directory`. Добавлен `.claude/scripts/*` в паттерн (симметрично с `skills/hooks/rules/lib/config/detectors`).
+- **`setup/smoke-test-fresh-install.sh` Test 6** — install.sh запускался без `env -i HOME=$TEST_WS` (positive case), писал реальные plist в `~/Library/LaunchAgents/com.strategist.*` и звал `launchctl load`. Добавлен `env -i HOME="$TEST_WS" PATH=/usr/bin:/bin` (как Test 5).
+
+### Added — WP-293 Контракт параметризации путей IWE
+
+- **smoke `[6a]` расширен на template `roles/*/scripts/`** — раньше скан только `.iwe-runtime/roles/`, dt-collect.sh:234 пропускался (он используется напрямую cron'ом, не из runtime).
+- **smoke `[6d]` meta-detector** — все `.claude/X/` каталоги в FMT обязаны быть в паттерне `update.sh:609`. Исключения: `agents`, `projects`, `context-cache`, `logs` (workspace-local / runtime-only). Sanity-check: `load-extensions.sh` существует и `.claude/scripts/*` в паттерне.
+- **`validate-template.sh [8/8]` parameterization debt detector** — переиспользует `setup/detector-regex.sh::DETECTOR_07_REGEX`. Скан областей: `roles/`, `scripts/`, `setup.sh`, `update.sh`. Текущий debt: 21 hits (WARN, не FAIL — оставлено на forced-fix при касании файлов в будущих коммитах).
+
+### Deferred — параметризация остального debt'а (WP-293 «полный вариант», ~3-4h)
+
+Detector в `[8/8]` показывает 21 hardcode (`DS-strategy`, `$HOME/IWE/<repo>`) в `setup.sh`, `update.sh:238`, `roles/strategist/scripts/strategist.sh`, `roles/synchronizer/scripts/scheduler.sh`. Постепенная очистка через касание файлов в последующих коммитах.
+
+## [0.29.28] — 2026-05-05
+
+### Added — `scripts/template-sync.sh`: автосинхронизация авторского IWE → FMT
+
+- **`scripts/template-sync.sh`** (новый, ~50 строк): синхронизация `$IWE_WORKSPACE/CLAUDE.md` → `$IWE_TEMPLATE/CLAUDE.md` с placeholder-подстановкой ($HOME → {{HOME_DIR}}, $IWE_GOVERNANCE_REPO → DS-strategy) и strip §9 авторского. Режимы: без флагов = sync, `--dry-run` = показать diff, `--check` = проверить drift (exit 1). Требует `IWE_GOVERNANCE_REPO` через `${VAR:?msg}`. Закрывает gap: скрипт был удалён при архивировании `DS-exocortex-setup-agent` (2026-04-27), но §9 ссылался на него как на существующий → автор правил FMT напрямую с риском забыть placeholder.
+
+### Changed — `CLAUDE.md`: промотированы L1-правила из авторского runtime
+
+- **`CLAUDE.md` §2 Pre-action Gates**: добавлен **Routing Gate** (создание/размещение артефакта → DP.KR.001 §5).
+- **`CLAUDE.md` §2 IntegrationGate чеклист**: добавлены пункт 1 (Service Clause) и пункт 3 (Role) с детализацией.
+
+## [0.29.27] — 2026-05-05
+
+### Changed — Pull-on-Touch: расширение с write на read+write
+
+- **`CLAUDE.md` §2 п.4**: правило `Pull-on-Touch` расширено с «первого изменения» на «первое обращение» (любое — `ls`/`Read`/`find`/`grep`/Edit/commit). Применяется ко всем git-репо в `{{HOME_DIR}}/IWE/*`, один раз на репо за сессию (lazy). Добавлена обработка dirty state (stash или «potentially stale»), rebase conflict (стоп + отчёт), network fail (работать с локальной копией). Причина: 5 мая 2026 агент сделал `ls` в DS-my-strategy без pull, origin был на 3 коммита впереди → ложный диагноз «Day Open не выполнен», написан ложный баг-отчёт. Дыра: исходное правило покрывало только write-операции, read оставался без защиты.
+
+## [0.29.26] — 2026-05-05
+
+### Changed — Day Close: фильтрация шума в git log (шаг 1)
+
+- **`.claude/skills/day-close/SKILL.md`**: шаг 1 «Сбор данных» — добавлены два `grep -vE` для исключения служебных коммитов и путей. Фильтр убирает: (а) Conventional Commits префиксы `docs|chore|ci|style|perf|test`; (б) пути `memory/`, `.claude/rules/`, `template-sync`, `backup`, `reindex`. `|| true` гарантирует exit 0 при пустом результате. Эффект: сокращение объёма вывода git log на 40-60%, снижение токенов в Day Close. Edge case: пользователи, делающие предметную работу через `docs:`-коммиты, увидят неполный отчёт — кандидат на параметр `git_log_filter` в `params.yaml` при появлении запроса.
+
+Коммит: `fe0220c`
+
+## [0.29.25] — 2026-05-04
+
+### Added — WP-196 Ф13: цикл Month Close → Strategy Session
+
+- **`roles/strategist/prompts/strategy-session-weekly.md`**: добавлен Шаг 0 (БЛОКИРУЮЩЕЕ) — «Если первая сессия месяца — прочитать архив прошлого месяца» (4 подшага: найти `archive/MonthClose YYYY-MM.md`, прочитать ДО шага 1, прочитать `archive/multiplier-trend.md`, использовать как контекст для шагов 5-6). Закрывает разрыв ВДВ-каскада v9: стадия 7 (Month Close) → стадия 2 (Strategy Session).
+- **`memory/r-questionnaire.md`**: Month Close блок переработан — M1-M3+M6 заполняются агентом автоматически из данных (с указанием источника), M4-M5 — субъективные, спрашиваются у пользователя.
+
+Коммит: `f0e2add`
+
+## [0.29.24] — 2026-05-02
+
+### Fixed — Architecture A: IWE_GOVERNANCE_REPO env var in launchd plist templates
+
+- **`roles/strategist/scripts/launchd/com.strategist.morning.plist`** и **`com.strategist.weekreview.plist`**: добавлен `IWE_GOVERNANCE_REPO={{GOVERNANCE_REPO}}` в `EnvironmentVariables`. launchd не загружает `~/.zshenv`, без этого `strategist.sh` использовал fallback `DS-strategy` вместо реального имени governance-репо пользователя.
+
+### Changed — WP-268 Ф8 + Architecture A: миграция strategist на template-форму
+
+- **`roles/strategist/scripts/strategist.sh`**: перевод на template-форму (`{{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}`, `{{CLAUDE_PATH}}`). Конкретные значения теперь только в `.iwe-runtime/` (генерируется `build-runtime.sh`).
+- **`roles/strategist/prompts/*.md`** (10 файлов): `DS-strategy` → `{{GOVERNANCE_REPO}}`. `strategist.sh` подставляет `$IWE_GOVERNANCE_REPO` через sed в runtime.
+- **`roles/strategist/scripts/cleanup-processed-notes.py`**: читает `IWE_GOVERNANCE_REPO` из env (fallback: `DS-strategy`).
+- **`roles/synchronizer/scripts/dt-collect-neon.py`**: удалены ADR-009 dual-write блоки к `development.user_events` (WP-268 cleanup).
+
+Коммиты: `404a304`, `7c6960a`
+
+## [0.29.23] — 2026-05-01
+
+### Added — WP-245 Ф28.2: скиллы personal-guide-start и personal-guide-render
+
+- **`/personal-guide-start`** — bootstrap репо `personal-guide` на GitHub пилота (один раз). Создаёт репо через Aisystant MCP, делегирует наполнение render-скиллу.
+- **`/personal-guide-render`** — наполнение 6 файлов (profile, worldview, methods, README, weekly/, daily/) из Память.Derived + Персона. Вызывается повторно при обновлениях.
+
+Пилот в своём Claude Code: `/personal-guide-start` → GitHub OAuth → 6 файлов в репо.
+
+Commit: `150ed2c`
+
 ## [0.29.22] — 2026-05-01
 
 ### Fixed — WP-139 Ф8.1: парсер мультипликатора (block-split bug)
