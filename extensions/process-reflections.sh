@@ -105,6 +105,8 @@ for audio in "${AUDIO_FILES[@]}"; do
     fi
 
     # Извлечь текст
+    RECORD_TIME=$(python3 -c "import os, datetime; print(datetime.datetime.fromtimestamp(os.path.getmtime('$audio')).strftime('%H:%M'))" 2>/dev/null || echo "??:??")
+
     TRANSCRIPT=$(python3 -c "
 import json, sys
 with open('$TEMP_JSON') as f:
@@ -116,7 +118,7 @@ text = ' '.join(s['text'] for p in paras for s in p.get('sentences', []))
 print(f'[{duration//60}:{duration%60:02d}] {text}')
 ")
 
-    ALL_TRANSCRIPTS+="**$BASENAME** $TRANSCRIPT
+    ALL_TRANSCRIPTS+="**$BASENAME** [$RECORD_TIME] $TRANSCRIPT
 "
     echo "  OK: $(echo "$TRANSCRIPT" | head -c 80)..."
 done
@@ -135,29 +137,23 @@ echo "Все транскрипты получены. Категоризирую
 CATEGORIZED=$(echo "$ALL_TRANSCRIPTS" | "$CLAUDE_PATH" \
     --dangerously-skip-permissions \
     --allowedTools "" \
-    -p "Ты получил набор аудиорефлексий. Раздели их на две категории и выведи ТОЛЬКО результат без пояснений:
+    -p "Ты получил аудиозаписи. Каждая помечена временем [HH:MM]. Раздели их на две категории и выведи ТОЛЬКО результат без пояснений.
 
-## Сделано
-ТОЛЬКО свершившиеся факты и события. БЕЗ времени каждого события — время будет у заголовка аудиорефлексии.
+## Хронометраж
+ТОЛЬКО краткие пинг-ответы формата «что сейчас делаю + тип активности» (П/И/Л/О/Д/ТО).
+Признаки: короткая запись, настоящее/недавнее время, фиксирует активность без развёрнутых мыслей.
+Формат каждой строки: HH:MM — что делал (тип)
+Пример:
+14:30 — работаю над стратегией (И)
+16:15 — прогулка с детьми (Л)
 
-Формат: буллеты без времени. Связанные подфакты — вложенные буллеты (4 пробела отступ).
+## Я думаю о...
+ВСЁ остальное: развёрнутые мысли, идеи, планы, выводы, наблюдения, события с контекстом, что нужно сделать.
+Формат: буллеты без времени.
+Если запись содержит и пинг-ответ, и мысли — пинг → Хронометраж, мысли → сюда.
 
-ВАЖНО: различай события СЕГОДНЯ и события ПРОШЛЫХ ДНЕЙ (человек вспоминает что было раньше — маркеры: «вспомнил», «мы сходили», «было ещё», прошедшее время о событиях явно не сегодняшних). События прошлых дней группируй под подзаголовком «Вспомнил» с дополнительным отступом.
-
-Пример формата:
-- Позвонил X, договорились на 17:00
-- Инцидент с Y: описание
-- Вспомнил
-    - Сходили к окулисту: результат
-        - Назначили то-то
-        - Заказали то-то
-    - Сходили к ортопеду: результат
-- Прогулялся, сделал рутину: 15 отжиманий
-
-## Мысли
-ВСЁ остальное: идеи, планы, намерения, реакции, выводы, наблюдения, бытовые задачи, что НУЖНО сделать. Формат: буллеты без времени.
-
-СТРОГОЕ правило: если фраза содержит «нужно», «надо», «хочу», «планирую», «подумать» — это Мысли, даже если рядом с фактом. Факт отдельно в Сделано, намерение отдельно в Мысли. Язык: русский.
+Язык вывода: русский.
+Если раздел пустой — выведи заголовок без строк под ним.
 
 Транскрипты:
 $ALL_TRANSCRIPTS" 2>/dev/null)
@@ -172,8 +168,8 @@ if $DRY_RUN; then
 fi
 
 # 4. Извлечь секции
-DONE_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Сделано/,/^## Мысли/{ /^## /d; p; }' | sed '/^$/d')
-THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Мысли/,$ { /^## Мысли/d; p; }' | sed '/^$/d')
+HRON_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Хронометраж/,/^## /{ /^## /d; p; }' | sed '/^$/d')
+THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Я думаю о\.\.\./,$ { /^## Я думаю о\.\.\./d; p; }' | sed '/^$/d')
 
 # 5. Дописать в daily note
 if [ ! -f "$DAILY_NOTE" ]; then
@@ -187,50 +183,100 @@ tags:
 created: $(date -Iseconds)
 ---
 
-### Log (дела)
+### Хронометраж
 
-### Scratchpad
+### Я думаю о...
 EOF
 fi
 
-# Время вставки
-INSERT_TIME=$(date +%H:%M)
+# Вставить в ### Хронометраж — с нормализацией, дедупликацией и сортировкой
+if [ -n "$HRON_SECTION" ]; then
+    # Читаем существующий блок из файла
+    EXISTING_HRON=$(python3 -c "
+import re
+content = open('$DAILY_NOTE').read()
+m = re.search(r'### Хронометраж\n(.*?)(?=\n###|\Z)', content, re.DOTALL)
+print(m.group(1).strip() if m else '')
+" 2>/dev/null || echo "")
 
-# Дописать в Log (дела) — перед ### Scratchpad
-if [ -n "$DONE_SECTION" ]; then
-    DONE_BLOCK="- $INSERT_TIME (аудиорефлексия)
-$(echo "$DONE_SECTION" | sed 's/^/\t/')"
+    COMBINED_HRON="$EXISTING_HRON
+$HRON_SECTION"
 
-    # Вставить перед ### Scratchpad
-    if grep -q '### Scratchpad' "$DAILY_NOTE"; then
-        python3 -c "
-import sys
-content = open('$DAILY_NOTE', 'r').read()
-marker = '### Scratchpad'
-idx = content.index(marker)
-new_content = content[:idx] + '''$DONE_BLOCK
-\n''' + content[idx:]
-open('$DAILY_NOTE', 'w').write(new_content)
-print('  Добавлено в Log (дела)')
-"
-    else
-        echo "" >> "$DAILY_NOTE"
-        echo "$DONE_BLOCK" >> "$DAILY_NOTE"
-        echo "  Добавлено в конец (Scratchpad не найден)"
-    fi
+    # Claude нормализует: единый формат, инференс типа курсивом, деdup, сортировка
+    NORMALIZED_HRON=$(echo "$COMBINED_HRON" | "$CLAUDE_PATH" \
+        --dangerously-skip-permissions \
+        --allowedTools "" \
+        -p "Нормализуй записи хронометража. Выводи ТОЛЬКО готовые строки, ничего лишнего.
+
+Первая строка вывода — всегда: [[Хронометраж — категории|П · И · Л · О · Д · ТО]]
+
+Формат каждой последующей строки: HH:MM — Глагол описание (Тип)
+Типы: П=продуктивная работа, И=инвестиционная (развитие/системы), Л=личное/отдых, О=обеспечение/рутина, Д=движение/спорт, ТО=техобслуживание/уборка
+
+Правила:
+- Каждая запись начинается с глагола в настоящем времени (наблюдаемое действие): «Смотрю», «Работаю», «Сплю», «Убираю»
+- Если тип явно указан в записи — оставь как есть: (И)
+- Если тип не указан или неясен — определи по контексту и напиши курсивом: (*И*)
+- Дубли (одинаковое время + похожее описание) → одна строка
+- Строки без времени (легенды, ссылки [[...]], заголовки) → удалить (легенда добавляется автоматически первой строкой)
+- Отсортировать по времени
+- Выводить по одной строке, без маркеров списка и без пустых строк между
+
+Входные записи:
+$COMBINED_HRON" 2>/dev/null)
+
+    python3 << PYEOF
+import re
+
+with open('$DAILY_NOTE', 'r') as f:
+    content = f.read()
+
+normalized = """$NORMALIZED_HRON""".strip()
+
+marker = '### Хронометраж'
+if marker not in content:
+    content += f'\n{marker}\n'
+
+pattern = re.compile(r'(### Хронометраж\n)(.*?)(?=\n###|\Z)', re.DOTALL)
+new_section = f'{marker}\n{normalized}\n'
+content = pattern.sub(new_section, content)
+
+with open('$DAILY_NOTE', 'w') as f:
+    f.write(content)
+print('  Хронометраж обновлён (нормализован, отсортирован)')
+PYEOF
 fi
 
-# Дописать в Scratchpad — в конец файла
+# Дописать в ### Я думаю о... — в конец секции
 if [ -n "$THOUGHTS_SECTION" ]; then
-    THOUGHTS_BLOCK="- $INSERT_TIME (аудиорефлексия)
-$(echo "$THOUGHTS_SECTION" | sed 's/^/\t/')"
+    python3 << PYEOF
+with open('$DAILY_NOTE', 'r') as f:
+    content = f.read()
 
-    echo "" >> "$DAILY_NOTE"
-    echo "$THOUGHTS_BLOCK" >> "$DAILY_NOTE"
-    echo "  Добавлено в Scratchpad"
+new_entries = """$THOUGHTS_SECTION"""
+marker = '### Я думаю о...'
+
+if marker not in content:
+    content += f'\n{marker}\n'
+
+# Найти конец секции (следующий ### или конец файла)
+import re
+pattern = re.compile(r'(### Я думаю о\.\.\.\n)(.*?)(?=\n###|\Z)', re.DOTALL)
+match = pattern.search(content)
+existing = match.group(2).rstrip() if match else ''
+
+combined = (existing + '\n' + new_entries).strip()
+new_section = f'{marker}\n{combined}\n'
+content = pattern.sub(new_section, content)
+
+with open('$DAILY_NOTE', 'w') as f:
+    f.write(content)
+print('  Добавлено в Я думаю о...')
+PYEOF
 fi
 
 # 6. Сохранить полный транскрипт в fleeting-notes как контекст IWE
+INSERT_TIME=$(date +%H:%M)
 FLEETING="$HOME/IWE/DS-strategy/inbox/fleeting-notes.md"
 if [ -f "$FLEETING" ]; then
     echo "" >> "$FLEETING"
