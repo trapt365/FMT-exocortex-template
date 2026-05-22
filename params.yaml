@@ -16,6 +16,10 @@ multiplier_enabled: true
 # Day Close: рефлексия (вопросы в конце дня)
 reflection_enabled: false
 
+# Day Close: путь к папке Calendar в Obsidian Vault (WSL-путь)
+# Файл дня: ${vault_calendar_path}/YYYY-MM-DD.md
+vault_calendar_path: "/mnt/c/Users/Timur/Documents/Vault1/Calendar"
+
 # Week Close: ротация уроков в MEMORY.md
 lesson_rotation: true
 
