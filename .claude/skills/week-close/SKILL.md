@@ -32,7 +32,13 @@ for repo in $(ls {{WORKSPACE_DIR}}/); do
 done
 ```
 
-Сопоставить коммиты с РП в WeekPlan → определить статусы (done/partial/not started).
+**Календарь недели:**
+```bash
+bash {{WORKSPACE_DIR}}/scripts/server-calendar.sh --week $(date -v-mon +%Y-%m-%d 2>/dev/null || date -d "last monday" +%Y-%m-%d)
+```
+Сверить запланированные встречи/задачи с фактом: что состоялось, что перенеслось, что отменилось. Для задач с отчётами (🔧 backup stress-test и т.п.) — проверить наличие артефакта.
+
+Сопоставить коммиты и календарь с РП в WeekPlan → определить статусы (done/partial/not started).
 
 ### 2. Headless week-review (если включён launchd Пн 00:00)
 
@@ -108,21 +114,38 @@ echo "=== memory/ файлы (mtime >14д) ===" && find {{MEMORY_DIR}} -name "*.
 | MEMORY.md строк | **> 200** | Флаг превышения лимита. Предложить архивацию старых feedback в `archive/`. |
 | memory/*.md без обращения > 14д | **> 5 файлов** | Предложить понизить `horizon: warm` (пользователь решает при Month Close). |
 
-### 8. Запись итогов в WeekPlan
+### 8. Запись итогов в WeekReport (split, ОПТ-5)
 
-Дописать секцию «Итоги W{N}» в текущий WeekPlan (структура — см. `roles/strategist/prompts/week-review.md`).
+> **Split (WP-297 ОПТ-5):** факты недели живут в `WeekReport W{N}`, не в WeekPlan. WeekPlan — только намерения.
+
+1. Открой текущий `WeekReport W{N} YYYY-MM-DD.md` (если нет — создай при следующем session-prep, см. CLAUDE.md §9 правило split).
+2. Дополни секцию «Итоги W{N}» (структура — см. `roles/strategist/prompts/week-review.md`).
+3. Также дополни секцию **«Сверка РП↔НЭП»** в WeekPlan W{N}: для каждого закрытого РП — какая НЭП снята / какой R-результат продвинут? Это вход в Strategy Session W{N+1}.
+4. Заполни секцию **«Рекомендации изменений в НЭП и Стратегию»** в WeekPlan W{N} — что узнали на этой неделе → что менять в `Dissatisfactions.md` / `Strategy.md`.
 
 ### 9. Extensions (after)
 
 Загрузить: `bash .claude/scripts/load-extensions.sh week-close after`. Exit 0 → `Read` каждый файл из вывода (alphabetic) → выполнить. Exit 1 → пропустить. Поддерживает `extensions/week-close.after.md` И `extensions/week-close.after.<suffix>.md`.
 
-### 10. Закоммитить governance-репо
+### 10. Оценка качества недели (WP-310 Gap-А)
+
+Спросить пользователя: **«Оцени качество недели 1-5:  
+1 = механически (шёл по инерции, голова не работала)  
+2 = поверхностно (что было, что сделано — без анализа паттернов)  
+3 = норма (осознанно, видишь паттерны, без прорывов)  
+4 = хорошо (конкретные решения, что-то понято по-новому)  
+5 = прорывная (изменилось понимание системы, ключевые решения)»**
+
+Ответ N → включить `q:N` в commit message следующего шага.  
+Если пользователь пропускает → commit без `q:`.
+
+### 11. Закоммитить governance-репо
 
 ```bash
-cd {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}} && git add -A && git commit -m "week-close: W{N} итоги" && git push
+cd {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}} && git add -A && git commit -m "week-close: W{N} итоги q:{score}" && git push
 ```
 
-### 11. Верификация (Haiku R23)
+### 12. Верификация (Haiku R23)
 
 Запустить sub-agent Haiku в роли R23 Верификатор (context isolation).
 Передать: чеклист, итоги недели, список обновлённых файлов.
@@ -142,6 +165,7 @@ cd {{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}} && git add -A && git commit -m "week-cl
 - [ ] ТО памяти: distinctions.md/MEMORY.md/memory/*.md проверены, флаги зафиксированы (или «норма»)
 - [ ] Итоги W{N} записаны в WeekPlan
 - [ ] Extensions `.after.md` выполнены (если есть)
+- [ ] Оценка качества недели q:N задана (1-5) и включена в commit message
 - [ ] Governance-репо закоммичено
 
 Все ✅ → «Неделя закрыта.» Иначе — указать что осталось.

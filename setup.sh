@@ -51,12 +51,19 @@ if $VALIDATE_ONLY; then
     echo "=========================================="
     echo ""
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    ENV_FILE="$SCRIPT_DIR/.exocortex.env"
+    # WP-273 Этап 2: .exocortex.env живёт в $WORKSPACE_DIR/ (родитель FMT-template),
+    # а не внутри FMT (раньше). Сначала проверяем актуальное место, потом legacy fallback.
+    WORKSPACE_GUESS="$(dirname "$SCRIPT_DIR")"
+    if [ -f "$WORKSPACE_GUESS/.exocortex.env" ]; then
+        ENV_FILE="$WORKSPACE_GUESS/.exocortex.env"
+    else
+        ENV_FILE="$SCRIPT_DIR/.exocortex.env"  # legacy fallback (pre-WP-273)
+    fi
     ERRORS=0
 
     # Load .exocortex.env
     if [ -f "$ENV_FILE" ]; then
-        echo "[1/4] Env-конфиг... ✓ .exocortex.env найден"
+        echo "[1/4] Env-конфиг... ✓ .exocortex.env найден ($ENV_FILE)"
         # Safe read: grep KEY=VALUE, no eval/source (values may contain spaces)
         _env_get() { grep "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d'=' -f2-; }
         # Check required keys
@@ -187,19 +194,25 @@ if $CORE_ONLY; then
     echo "  Режим --core: проверяются только обязательные зависимости (git)."
     echo "  GitHub CLI, Node.js, Claude Code — не требуются."
 else
-    check_command "gh" "GitHub CLI" "brew install gh"
-    check_command "node" "Node.js" "brew install node (or https://nodejs.org)"
-    check_command "npm" "npm" "Comes with Node.js"
-    check_command "claude" "Claude Code" "npm install -g @anthropic-ai/claude-code"
+    # В CI-режиме (SETUP_CI=1) node/npm/claude — необязательны: Test 10 проверяет delivery
+    # и role-installation, а не наличие runtime-инструментов на машине.
+    # Паттерн уже установлен для gh auth ниже (строка с SETUP_CI).
+    _TOOL_REQUIRED="${SETUP_CI:+false}"; _TOOL_REQUIRED="${_TOOL_REQUIRED:-true}"
+    check_command "gh" "GitHub CLI" "brew install gh" "$_TOOL_REQUIRED"
+    check_command "node" "Node.js" "brew install node (or https://nodejs.org)" "$_TOOL_REQUIRED"
+    check_command "npm" "npm" "Comes with Node.js" "$_TOOL_REQUIRED"
+    check_command "claude" "Claude Code" "npm install -g @anthropic-ai/claude-code" "$_TOOL_REQUIRED"
 
     # Check gh auth
     if command -v gh >/dev/null 2>&1; then
         if gh auth status >/dev/null 2>&1; then
             echo "  ✓ GitHub CLI: authenticated"
         else
-            echo "  ✗ GitHub CLI: not authenticated"
-            echo "    Run: gh auth login"
-            PREREQ_FAIL=1
+            echo "  ⚠ GitHub CLI: not authenticated"
+            if [ -z "${SETUP_CI:-}" ]; then
+                echo "    Run: gh auth login"
+                PREREQ_FAIL=1
+            fi
         fi
     fi
 fi
@@ -557,6 +570,11 @@ elif ! command -v launchctl >/dev/null 2>&1; then
 else
     echo "[5/6] Installing roles..."
 
+    # Source ~/.iwe-paths — гарантирует IWE_RUNTIME / IWE_WORKSPACE / IWE_TEMPLATE
+    # в env для role install.sh (тот же паттерн что в update.sh:836).
+    # Без этого install.sh падает в legacy fallback и видит {{плейсхолдеры}}.
+    [ -f "$HOME/.iwe-paths" ] && . "$HOME/.iwe-paths"
+
     MANUAL_ROLES=()
 
     # Discover roles by role.yaml manifests (sorted by priority)
@@ -646,6 +664,35 @@ else
     fi
 fi
 
+# === 7. Clone Base repos (FPF + SPF) ===
+echo "[7/7] Installing Base repos (FPF, SPF)..."
+if $CORE_ONLY; then
+    echo "  пропущено (core mode)"
+elif ! command -v gh >/dev/null 2>&1; then
+    echo "  пропущено (gh CLI не найден)"
+else
+    clone_base_repo() {
+        local name="$1"
+        local gh_repo="$2"
+        local dest="$WORKSPACE_DIR/$name"
+        if [ -d "$dest/.git" ]; then
+            echo "  ✓ $name: уже установлен ($dest)"
+        elif $DRY_RUN; then
+            echo "  [DRY RUN] Would clone $gh_repo → $dest (--depth=1)"
+        else
+            if gh repo clone "$gh_repo" "$dest" -- --depth=1 --quiet 2>/dev/null; then
+                echo "  ✓ $name: клонирован ($dest)"
+            else
+                echo "  ⚠ $name: не удалось клонировать — проверьте сеть или доступ к $gh_repo"
+                echo "    Клонировать вручную: gh repo clone $gh_repo $dest -- --depth=1"
+            fi
+        fi
+    }
+
+    clone_base_repo "FPF" "ailev/FPF"
+    clone_base_repo "SPF" "TserenTserenov/SPF"
+fi
+
 # === Done ===
 echo ""
 if $DRY_RUN; then
@@ -696,9 +743,9 @@ else
         echo "  validate-режим setup.sh проверит: env-конфиг, обязательные файлы,"
         echo "  extensions, доступность MCP, структурные инварианты."
         echo ""
-        read -p "Запустить проверку сейчас? (y/n) " -n 1 -r
+        read -p "Запустить проверку сейчас? (y/n) " -n 1 -r || true
         echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if [[ ${REPLY:-} =~ ^[Yy]$ ]]; then
             echo ""
             bash "$TEMPLATE_DIR/setup.sh" --validate
         else

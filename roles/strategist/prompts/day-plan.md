@@ -6,29 +6,31 @@
 
 ```bash
 DATE=$(date +%Y-%m-%d)
-GOV="$HOME/IWE/{{GOVERNANCE_REPO}}"
-DAYPLAN_FILE="$GOV/current/DayPlan $DATE.md"
+_IWE="${IWE_WORKSPACE:-$HOME/IWE}"
+DAYPLAN_FILE="$_IWE/{{GOVERNANCE_REPO}}/current/DayPlan $DATE.md"
 
-# Страховочная сетка: архивировать вчерашние/старые DayPlan'ы из current/
-# (Day Close мог не отработать — не оставлять мусор для следующего carry-over)
-for old in "$GOV"/current/DayPlan\ 20*.md; do
-  [ -f "$old" ] || continue
-  base=$(basename "$old")
-  fdate="${base#DayPlan }"; fdate="${fdate%.md}"
-  if [ "$fdate" != "$DATE" ]; then
-    git -C "$GOV" mv "$old" "archive/day-plans/" 2>/dev/null || mv "$old" "$GOV/archive/day-plans/"
-    echo "pre-archive: $base → archive/day-plans/"
-  fi
-done
-
-# Если файла нет — создать через scaffold
+# Если файла нет — создать через scaffold (если доступен)
 if [ ! -f "$DAYPLAN_FILE" ]; then
-  bash "$HOME/IWE/scripts/day-open-scaffold.sh" "$DATE" > "$DAYPLAN_FILE"
-  SCAFFOLD_EXIT=$?
-  if [ "$SCAFFOLD_EXIT" -eq 2 ]; then
-    rm -f "$DAYPLAN_FILE"
-    echo "Сегодня strategy_day, DayPlan не создаётся (план в WeekPlan)."
-    exit 0
+  _SCAFFOLD="$_IWE/scripts/day-open-scaffold.sh"
+  if [ -f "$_SCAFFOLD" ]; then
+    bash "$_SCAFFOLD" "$DATE" > "$DAYPLAN_FILE"
+    SCAFFOLD_EXIT=$?
+    if [ "$SCAFFOLD_EXIT" -eq 2 ]; then
+      rm -f "$DAYPLAN_FILE"
+      echo "Сегодня strategy_day, DayPlan не создаётся (план в WeekPlan)."
+      exit 0
+    fi
+  else
+    echo "WARN: day-open-scaffold.sh not found at $_IWE/scripts/ — создаю минимальный DayPlan, PENDING-маркеры заполнит LLM"
+    cat > "$DAYPLAN_FILE" <<FRONTMATTER
+---
+type: daily-plan
+date: $DATE
+status: active
+agent: Стратег
+generated_by: fallback (scaffold missing)
+---
+FRONTMATTER
   fi
 fi
 ```
@@ -80,7 +82,7 @@ fi
 ### Шаг 7 — сохранение и коммит
 
 ```bash
-cd "$HOME/IWE/{{GOVERNANCE_REPO}}"
+cd "${IWE_WORKSPACE:-$HOME/IWE}/{{GOVERNANCE_REPO}}"
 git add current/DayPlan*.md
 git commit -m "day-plan: $DATE автономный полный (strategist morning)"
 git pull --rebase  # на случай если Mac тоже что-то закоммитил
@@ -93,15 +95,15 @@ git push
 - ❌ **НЕ останавливаться** если файл DayPlan уже существует — заполни PENDING секции (не пересоздавай)
 - ❌ **НЕ просить подтверждения** — все решения по алгоритму
 - ✅ Все решения принимай по skill /day-open (`{{WORKSPACE_DIR}}/.claude/skills/day-open/SKILL.md`)
-- ✅ Финал: SUCCESS + git push + Telegram (через notify.sh strategist day-plan)
+- ✅ Финал: SUCCESS + git push (Telegram-уведомление отправляет strategist.sh автоматически после завершения)
 
-## Источники (на сервере tsekh-1)
+## Источники
 
 - HUB: `{{WORKSPACE_DIR}}/{{GOVERNANCE_REPO}}/current/`
 - SPOKES: `{{WORKSPACE_DIR}}/*/WORKPLAN.md`
-- MEMORY: `~/.claude/projects/-Users-tseren-IWE/memory/`
+- MEMORY: `~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/`
 - Skill: `{{WORKSPACE_DIR}}/.claude/skills/day-open/SKILL.md`
-- Templates: `~/.claude/projects/-Users-tseren-IWE/memory/templates-dayplan.md`
+- Templates: `~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/templates-dayplan.md`
 - Scaffold: `{{WORKSPACE_DIR}}/scripts/day-open-scaffold.sh`
 - Extensions: `{{WORKSPACE_DIR}}/extensions/day-open.before.md`, `.after.md`, `.checks.md`
 

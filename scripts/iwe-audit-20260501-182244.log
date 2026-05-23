@@ -1,0 +1,187 @@
+# IWE Installation Audit — 2026-05-01 18:16
+
+_Root:_ `/home/trapt22/IWE`
+
+## 1. Inventory (структура файлов)
+
+| Файл | Статус | Примечание |
+|---|---|---|
+| `CLAUDE.md` | ✅ |  |
+| `MEMORY.md` | ✅ | в memory/MEMORY.md (auto-memory layout) |
+| `.claude/sync-manifest.yaml` | ✅ |  |
+| `.claude/rules/distinctions.md` | ✅ |  |
+| `.claude/rules/formatting.md` | ❌ |  |
+| `.claude/skills/day-open/SKILL.md` | ✅ |  |
+| `.claude/skills/day-close/SKILL.md` | ✅ |  |
+| `memory/protocol-open.md` | ✅ |  |
+| `memory/protocol-work.md` | ✅ |  |
+| `memory/protocol-close.md` | ✅ |  |
+| `FMT-exocortex-template/update.sh` | ✅ | self-update запускается отсюда |
+| `scripts/iwe-drift.sh` | ❌ | не найден ни в FMT-template, ни в workspace |
+| `params.yaml` | ✅ |  |
+| `DS-strategy/` | ✅ | git-репо (is_git=true) |
+
+**coverage:** 12/14 (отсутствует: критичных=2, опциональных=0)
+
+**Дополнительно (вне таблицы скрипта):**
+- `iwe-audit.sh` отсутствует в `/home/trapt22/IWE/scripts/` и в `$IWE_SCRIPTS=$IWE_TEMPLATE/scripts/`. Найден только в `DS-exocortex/scripts/iwe-audit.sh`. SKILL.md fallback-цепочка эту локацию НЕ покрывает → если бы пользователь следовал SKILL.md дословно, аудит бы упал на старте с сообщением "iwe-audit.sh не найден".
+
+## 2. L1 drift (платформа vs FMT)
+
+❌ `scripts/iwe-drift.sh` не найден — drift-сверка пропущена
+
+## 3. DS-strategy
+
+**Uncommitted changes:** 22
+
+```
+ M archive/notes/Notes-Archive.md
+ M exocortex/MEMORY.md
+ M exocortex/checklists.md
+ M exocortex/fpf-reference.md
+ M exocortex/hard-distinctions.md
+ M exocortex/navigation.md
+ M exocortex/protocol-close.md
+ M exocortex/protocol-open.md
+ M exocortex/protocol-work.md
+ M exocortex/repo-type-rules.md
+ M exocortex/roles.md
+ M exocortex/sota-reference.md
+ M inbox/fleeting-notes.md
+?? exocortex/2026-04-30/
+?? exocortex/family-health-data.md
+?? exocortex/feedback-bmad-mvp-overengineering.md
+?? exocortex/feedback-daily-planning-singularity.md
+?? exocortex/feedback-singularity-tasks.md
+?? exocortex/feedback_protocol_source.md
+?? exocortex/iwe-principles.md
+?? exocortex/project-dayplan-html-bug.md
+?? exocortex/project_dayplan_template.md
+```
+
+### Diff с FMT-strategy-template
+
+_N/A — шаблон не найден ни в `FMT-strategy-template/`, ни в `FMT-exocortex-template/templates/strategy-skeleton/`._
+
+## 4. User customizations (L3)
+
+### Extensions
+
+**Найдено хуков:** 5
+
+| Hook | Размер |
+|---|---|
+| `day-close.after.md` | 102 строк |
+| `day-open.after.md` | 239 строк |
+| `day-open.before.md` | 9 строк |
+| `strategy-session.after.md` | 60 строк |
+| `week-close.after.md` | 186 строк |
+
+### params.yaml — отличия от шаблона
+
+_Полное совпадение со skeleton._
+
+### AUTHOR-ONLY зоны
+
+✅ Найдены маркеры L3:
+- блоков `<!-- AUTHOR-ONLY -->`: 1
+
+## 5. Update prerequisites
+
+### Бинарники
+
+| Бинарник | Статус | Путь |
+|---|---|---|
+| `git` | ✅ | /usr/bin/git |
+| `curl` | ✅ | /usr/bin/curl |
+| `python3` | ✅ | /usr/bin/python3 |
+
+### Конфигурация (.exocortex.env)
+
+⚠️ `GITHUB_USER` пуст или = плейсхолдер. Решение: отредактировать `~/.exocortex.env`, проставить логин.
+
+### Состояние FMT-exocortex-template
+
+⚠️ `FMT-exocortex-template/` имеет 1 uncommitted changes (ветка `main`) — update может конфликтовать. Решение: `git -C FMT-exocortex-template stash` или коммит.
+
+**Вердикт раздела:** ⚠️ 2 предупреждений — `update.sh` может частично сработать, но проверь рекомендации выше.
+
+## 6. MCP healthcheck
+
+**Замечание:** SKILL.md ожидает tools с префиксом `mcp__claude_ai_IWE__*`, но в текущем окружении они зарегистрированы как `mcp__iwe-knowledge__*`. Имя сервера в SKILL.md устарело — тестировались актуальные `iwe-knowledge` tools. Tool `dt_read_digital_twin` (digital twin) в текущем MCP-сервере отсутствует — заменён на ближайший доступный `personal_get_document` для индикативной проверки доступности персонального слоя.
+
+| Tool | Статус | Латентность | Примечание |
+|------|--------|-------------|------------|
+| `knowledge_search` (query="test", limit=1) | ✅ | ~2-3s | вернул документ из docs-courses |
+| `github_status` | ❌ | n/a | MCP error -32603: серверный баг с SQL template literal (`This function can now be called only as a tagged-template function`) — это инфраструктурная регрессия на стороне MCP-сервера, не проблема инсталляции |
+| `personal_search` (query="ping", limit=1) | ✅ | ~1-2s | Пустой ответ `[]` — это OK; tool отвечает, доступ есть. Подписочного отказа нет (DP.SC.112 не сработал) |
+| `personal_get_document` (вместо dt_*) | ⏸️ | n/a | tool не вызывался — schema-drift в SKILL.md (dt_read_digital_twin отсутствует) |
+
+**Coverage:** 2/3 рабочих + 1 серверный баг (не вина инсталляции). Эффективно: 2/4 при дословном SKILL.md, 2/3 если корректировать на текущий набор tools.
+
+## 7. Ритуал smoke-test (`/run-protocol close day`)
+
+### Подготовка
+- SESSION_ID: `19818566-138a-4bc1-8e4c-e28439b48118` (синтетический uuid через `uuidgen`, т.к. `CLAUDE_SESSION_ID` не выставлен в env родительской bash-сессии)
+- Sentinel создан: `/tmp/iwe-dry-run-19818566-138a-4bc1-8e4c-e28439b48118.flag` ✅
+- Subagent: general-purpose, контекст изолирован
+
+### Отчёт subagent'а
+
+**Шагов выполнено (read+process):** 2 из 13
+- Шаг 0 Extensions before — exit 1, нет файла (ожидаемо)
+- Шаг 1 Сбор коммитов — успешно, 6 репо с коммитами
+
+**Упёрлось на:** Шаг 2a WeekPlan: Edit: dry-run gate **НЕ сработал** — `CLAUDE_SESSION_ID` не выставлен в окружении агента, hook ищет `/tmp/iwe-dry-run-noid.flag` (не существует), sentinel с UUID `19818566-...` игнорируется, `exit 0 = allow`. Тестовый Edit прошёл (добавил+убрал маркер, net-zero).
+
+**Read-логика:** ✅ работает — все read-операции выполнены без проблем.
+
+**Заключение subagent'а:** ⚠️ — критический баг dry-run контракта: gate привязан к `CLAUDE_SESSION_ID`, но переменная не пробрасывается в окружение Bash-вызовов агента → write-операции НЕ блокируются. Sentinel с захардкоженным UUID не работает, если он не совпадает с runtime session ID. Read-фаза протокола (шаги 0, 1) валидна; write-фаза (2a-11) непротестирована из-за нерабочего gate.
+
+**Cleanup:** sentinel удалён, других `iwe-dry-run-*.flag` в /tmp нет. Net-zero на DS-strategy подтверждён (22 изменения до = 22 изменения после).
+
+### Интерпретация
+
+- ✅ Read-логика ритуала работает (Шаги 0, 1, MEMORY-чтение, git log по 6 репо)
+- ❌ **Smoke-защита сломана:** dry-run контракт не выполняет своё обещание блокировать write-tools, потому что `CLAUDE_SESSION_ID` не пробрасывается в env subagent'а. Это инфраструктурный gap, ортогональный health-у самой инсталляции, но он подрывает Service Clause `/audit-installation` (smoke-test перестаёт быть smoke-тестом).
+- Поскольку `Edit` НЕ был заблокирован, мы получили реальный (net-zero) write-проход вместо защищённого. Subagent остановился добровольно, поэтому каскада write-шагов не было — но это везение, не контракт.
+
+---
+
+# Verdict (VR.R.002 Аудитор, context isolation)
+
+## Verdict: ❌
+
+**Сводка по компонентам:**
+- **L1 (платформа):** ❌ — coverage 12/14: отсутствует `formatting.md` (горячий файл, читается каждую сессию по CLAUDE.md §6) и `scripts/iwe-drift.sh` (drift-сверка пропущена → невозможно подтвердить целостность L1). Дополнительно: `iwe-audit.sh` отсутствует на пути, заявленном в SKILL.md, — fallback-цепочка не покрывает реальную локацию.
+- **Ритуалы:** ❌ — Smoke-test упёрся на шаге 2a из 13. Read-фаза работает, но **dry-run контракт сломан**: `CLAUDE_SESSION_ID` не пробрасывается в окружение subagent'а, sentinel игнорируется, write-tools не блокируются. Это подрывает Service Clause `/audit-installation` — smoke перестаёт быть smoke-тестом.
+- **MCP:** ⚠️ — 2/4 рабочих по дословному SKILL.md. `knowledge_search` ✅, `personal_search` ✅, `github_status` ❌ (серверный SQL-баг, не вина инсталляции), `dt_read_digital_twin` отсутствует в текущем MCP-сервере (schema-drift в SKILL.md). Имя сервера в SKILL.md (`mcp__claude_ai_IWE__*`) устарело — фактически `mcp__iwe-knowledge__*`.
+- **DS-strategy:** ⚠️ — git-репо ✅, но 22 uncommitted changes (13 modified + 9 untracked); шаблон `FMT-strategy-template` не найден → diff невозможен.
+- **Smoke-инфраструктура (dry-run gate):** ❌ — gate не сработал по контракту. Тестовый Edit прошёл (write не заблокирован). Subagent остановился добровольно — везение, а не контракт.
+
+**Критичные gaps:**
+- `.claude/rules/formatting.md` — отсутствует горячий L1-файл, заявленный в CLAUDE.md §6 как обязательный.
+- `scripts/iwe-drift.sh` — отсутствует и в FMT-template, и в workspace; невозможно выполнить L1 drift-сверку.
+- **dry-run gate broken:** `CLAUDE_SESSION_ID` не пробрасывается в env subagent'а → sentinel-механика не работает → smoke-test не блокирует write-tools. Это критический инфраструктурный баг Service Clause `/audit-installation`.
+- `iwe-audit.sh` отсутствует на путях из SKILL.md fallback-цепочки (только в `DS-exocortex/scripts/`) — следование SKILL.md дословно даст «not found».
+- Schema-drift SKILL.md ↔ MCP: префикс `mcp__claude_ai_IWE__*` устарел, `dt_read_digital_twin` отсутствует.
+
+**Рекомендации:**
+
+*Через `update.sh` (Синхронизатор):*
+- Восстановить `.claude/rules/formatting.md` из FMT-exocortex-template.
+- Восстановить `scripts/iwe-drift.sh` (или подтвердить, что он удалён намеренно — тогда обновить SKILL.md и убрать раздел «L1 drift» из аудита).
+- Перевыпустить `scripts/iwe-audit.sh` в каноническую локацию (`$IWE_TEMPLATE/scripts/` или `/home/trapt22/IWE/scripts/`), на которую указывает fallback-цепочка SKILL.md.
+
+*Руками:*
+- **Починить dry-run контракт** (приоритет 1): обеспечить проброс `CLAUDE_SESSION_ID` в env subagent'а ИЛИ перейти на стабильный sentinel без UUID-привязки. Без этого `/audit-installation` не выполняет своё обещание.
+- Обновить SKILL.md `audit-installation`: префикс MCP-сервера `mcp__iwe-knowledge__*`, заменить `dt_read_digital_twin` на актуальный tool (или убрать пункт).
+- Закоммитить/застэшить 1 изменение в `FMT-exocortex-template/` перед запуском `update.sh` (иначе риск конфликта).
+- Проставить `GITHUB_USER` в `~/.exocortex.env` (плейсхолдер).
+- Прибрать DS-strategy: 22 uncommitted → коммит или явное решение «работа в процессе».
+
+*Отложить:*
+- Серверный баг `github_status` (MCP SQL template literal) — это регрессия на стороне MCP-сервера, не инсталляции; репортить отдельно.
+- Diff DS-strategy ↔ FMT-strategy-template — пока шаблон не существует, секция аудита не применима; либо создать шаблон, либо убрать секцию.
+
+**Обоснование вердикта по Gate-критериям:** ≥1 critical (L1 drift по 2 файлам не «>5», но ритуал падает на write-фазе из-за сломанного gate, и MCP отвечают 2/4 при дословном SKILL.md — на границе «<2/4»). Ключевой блокер — **сломанный smoke-контракт**: пока он не починен, любой следующий аудит даёт ложно-зелёный результат на write-фазе.
