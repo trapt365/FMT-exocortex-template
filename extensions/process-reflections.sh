@@ -225,13 +225,19 @@ $HRON_SECTION"
 Входные записи:
 $COMBINED_HRON" 2>/dev/null)
 
-    python3 << PYEOF
-import re
+    # Записать нормализованный хронометраж в temp-файл — избегаем heredoc-инъекции
+    # через кавычки (""") или спецсимволы в выводе Claude
+    HRON_TMPFILE=$(mktemp /tmp/hron-normalized-XXXXX)
+    printf '%s' "$NORMALIZED_HRON" > "$HRON_TMPFILE"
 
-with open('$DAILY_NOTE', 'r') as f:
+    python3 - "$DAILY_NOTE" "$HRON_TMPFILE" << 'PYEOF'
+import re, sys
+
+daily_note = sys.argv[1]
+normalized = open(sys.argv[2]).read().strip()
+
+with open(daily_note, 'r') as f:
     content = f.read()
-
-normalized = """$NORMALIZED_HRON""".strip()
 
 marker = '### Хронометраж'
 if marker not in content:
@@ -239,40 +245,49 @@ if marker not in content:
 
 pattern = re.compile(r'(### Хронометраж\n)(.*?)(?=\n###|\Z)', re.DOTALL)
 new_section = f'{marker}\n{normalized}\n'
-content = pattern.sub(new_section, content)
+# lambda m: избегает интерпретации \1, \2 и т.п. в тексте замены
+content = pattern.sub(lambda m: new_section, content)
 
-with open('$DAILY_NOTE', 'w') as f:
+with open(daily_note, 'w') as f:
     f.write(content)
 print('  Хронометраж обновлён (нормализован, отсортирован)')
 PYEOF
+
+    rm -f "$HRON_TMPFILE"
 fi
 
 # Дописать в ### Я думаю о... — в конец секции
 if [ -n "$THOUGHTS_SECTION" ]; then
-    python3 << PYEOF
-with open('$DAILY_NOTE', 'r') as f:
-    content = f.read()
+    THOUGHTS_TMPFILE=$(mktemp /tmp/thoughts-XXXXX)
+    printf '%s' "$THOUGHTS_SECTION" > "$THOUGHTS_TMPFILE"
 
-new_entries = """$THOUGHTS_SECTION"""
+    python3 - "$DAILY_NOTE" "$THOUGHTS_TMPFILE" << 'PYEOF'
+import re, sys
+
+daily_note = sys.argv[1]
+new_entries = open(sys.argv[2]).read().strip()
 marker = '### Я думаю о...'
+
+with open(daily_note, 'r') as f:
+    content = f.read()
 
 if marker not in content:
     content += f'\n{marker}\n'
 
-# Найти конец секции (следующий ### или конец файла)
-import re
 pattern = re.compile(r'(### Я думаю о\.\.\.\n)(.*?)(?=\n###|\Z)', re.DOTALL)
 match = pattern.search(content)
 existing = match.group(2).rstrip() if match else ''
 
 combined = (existing + '\n' + new_entries).strip()
 new_section = f'{marker}\n{combined}\n'
-content = pattern.sub(new_section, content)
+content = pattern.sub(lambda m: new_section, content)
 
-with open('$DAILY_NOTE', 'w') as f:
+with open(daily_note, 'w') as f:
     f.write(content)
 print('  Добавлено в Я думаю о...')
 PYEOF
+
+    rm -f "$THOUGHTS_TMPFILE"
 fi
 
 # 6. Сохранить полный транскрипт в fleeting-notes как контекст IWE
