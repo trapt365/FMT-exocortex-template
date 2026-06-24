@@ -147,7 +147,7 @@ CATEGORIZED=$(echo "$ALL_TRANSCRIPTS" | "$CLAUDE_PATH" \
 14:30 — работаю над стратегией (И)
 16:15 — прогулка с детьми (Л)
 
-## Я думаю о...
+## Scratchpad
 ВСЁ остальное: развёрнутые мысли, идеи, планы, выводы, наблюдения, события с контекстом, что нужно сделать.
 Формат: буллеты без времени.
 Если запись содержит и пинг-ответ, и мысли — пинг → Хронометраж, мысли → сюда.
@@ -169,7 +169,7 @@ fi
 
 # 4. Извлечь секции
 HRON_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Хронометраж/,/^## /{ /^## /d; p; }' | sed '/^$/d')
-THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Я думаю о\.\.\./,$ { /^## Я думаю о\.\.\./d; p; }' | sed '/^$/d')
+THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Scratchpad/,$ { /^## Scratchpad/d; p; }' | sed '/^$/d')
 
 # 5. Дописать в daily note
 if [ ! -f "$DAILY_NOTE" ]; then
@@ -185,7 +185,7 @@ created: $(date -Iseconds)
 
 ### Хронометраж
 
-### Я думаю о...
+### Scratchpad
 EOF
 fi
 
@@ -256,7 +256,7 @@ PYEOF
     rm -f "$HRON_TMPFILE"
 fi
 
-# Дописать в ### Я думаю о... — в конец секции
+# Дописать в ### Scratchpad — в конец секции
 if [ -n "$THOUGHTS_SECTION" ]; then
     THOUGHTS_TMPFILE=$(mktemp /tmp/thoughts-XXXXX)
     printf '%s' "$THOUGHTS_SECTION" > "$THOUGHTS_TMPFILE"
@@ -266,7 +266,7 @@ import re, sys
 
 daily_note = sys.argv[1]
 new_entries = open(sys.argv[2]).read().strip()
-marker = '### Я думаю о...'
+marker = '### Scratchpad'
 
 with open(daily_note, 'r') as f:
     content = f.read()
@@ -274,7 +274,7 @@ with open(daily_note, 'r') as f:
 if marker not in content:
     content += f'\n{marker}\n'
 
-pattern = re.compile(r'(### Я думаю о\.\.\.\n)(.*?)(?=\n###|\Z)', re.DOTALL)
+pattern = re.compile(r'(### Scratchpad\n)(.*?)(?=\n###|\n---|\Z)', re.DOTALL)
 match = pattern.search(content)
 existing = match.group(2).rstrip() if match else ''
 
@@ -284,7 +284,7 @@ content = pattern.sub(lambda m: new_section, content)
 
 with open(daily_note, 'w') as f:
     f.write(content)
-print('  Добавлено в Я думаю о...')
+print('  Добавлено в Scratchpad')
 PYEOF
 
     rm -f "$THOUGHTS_TMPFILE"
