@@ -75,6 +75,13 @@ STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit
 # мозг думает (TTFT на полном контексте IWE ~9-12с). Чередуем, чтобы не роботело.
 FILLERS       = ["Секунду.", "Смотрю.", "Сейчас.", "Минуту."]
 
+# Wake-слово (как «эй, Siri»): помощник реагирует только на фразу, начинающуюся с
+# имени, остальную речь игнорирует. Варианты — под неточность распознавания «Клод».
+# VOICE_WAKE="off" → всегда слушать (старое поведение, без wake-слова).
+_wake_raw  = os.environ.get("VOICE_WAKE", "клод,клот,клауд,клода,клоуд,клауде,клот")
+WAKE_WORDS = [w.strip().lower() for w in _wake_raw.split(",")
+              if w.strip() and w.strip().lower() not in ("off", "none", "-", "")]
+
 # ── Утилиты ────────────────────────────────────────────────────────────────
 def log(msg):
     print(f"\033[36m[voice]\033[0m {msg}", flush=True)
@@ -367,6 +374,23 @@ def split_sentences(buf):
             last = m.end()
     return out, buf[last:]
 
+def extract_command(heard):
+    """Wake-режим: вернуть команду после имени, '' если сказали только имя,
+    None если обращения по имени не было (игнорировать). Без wake-слов — вернуть как есть."""
+    if not WAKE_WORDS:
+        return heard
+    low = heard.lower()
+    norm = re.sub(r"[^\w\s]", " ", low)
+    best = None
+    for w in WAKE_WORDS:
+        idx = norm.find(w)
+        if idx != -1 and idx <= 15 and (best is None or idx < best[0]):
+            best = (idx, len(w))
+    if best is None:
+        return None
+    after = heard[best[0] + best[1]:].strip(" ,.!?—-:")
+    return after
+
 async def speak_worker(queue):
     """Берёт фразы из очереди и проговаривает по одной (синтез+воспроизведение)."""
     while True:
@@ -437,7 +461,11 @@ async def amain():
     async with ClaudeSDKClient(opts) as client:
         await ask_claude(client, "Готов? Ответь одним словом: готов.")
         log("готов. Скажи «стоп» для выхода — говори.")
-        await asyncio.to_thread(speak, "Готов, говори.")
+        if WAKE_WORDS:
+            await asyncio.to_thread(speak, f"Готов. Обращайся по имени: {WAKE_WORDS[0].capitalize()}.")
+            log(f"wake-слово: «{WAKE_WORDS[0]}» — реагирую только на обращение по имени")
+        else:
+            await asyncio.to_thread(speak, "Готов, говори.")
         turn = 0
         while True:
             try:
@@ -451,14 +479,30 @@ async def amain():
                 if not heard:
                     continue
                 print(f"\033[32m[ты]\033[0m {heard}", flush=True)
-                low = heard.lower().strip(" .,!?")
+                # фильтр по имени (wake-слово). None → не ко мне, тихо игнорирую.
+                cmd = extract_command(heard)
+                if cmd is None:
+                    log("(не по имени — жду обращения)")
+                    continue
+                if cmd == "":
+                    # сказали только имя → отзываюсь и слушаю команду следующей фразой
+                    await asyncio.to_thread(speak, "Да?")
+                    await asyncio.to_thread(wait_drain)
+                    pcm = await asyncio.to_thread(record_utterance)
+                    if len(pcm) < FRAME_BYTES * 5:
+                        continue
+                    cmd = await asyncio.to_thread(transcribe, pcm)
+                    if not cmd:
+                        continue
+                    print(f"\033[32m[ты]\033[0m {cmd}", flush=True)
+                low = cmd.lower().strip(" .,!?")
                 if any(w == low or low.startswith(w + " ") or low.endswith(" " + w) for w in STOP_WORDS):
                     await asyncio.to_thread(speak, "Останавливаюсь. Пока.")
                     break
                 # мгновенное подтверждение, чтобы не было немой паузы пока мозг думает
                 await asyncio.to_thread(speak, FILLERS[turn % len(FILLERS)])
                 turn += 1
-                reply, t_first, t_answer = await stream_and_speak(client, heard)
+                reply, t_first, t_answer = await stream_and_speak(client, cmd)
                 print(f"\033[33m[claude]\033[0m {reply}", flush=True)
                 if PERF:
                     fa = f"{t_first:.1f}с" if t_first is not None else "—"

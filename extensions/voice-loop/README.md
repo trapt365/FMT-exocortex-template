@@ -9,6 +9,8 @@ Hands-free voice-to-voice с Claude Code: говоришь команду → р
 bash DS-exocortex/extensions/voice-loop/voice-loop.sh
 ```
 
+Обращайся по имени: **«Клод, …»** (как «эй Siri»). Можно одной фразой («Клод, прочитай
+план») или просто «Клод» → «Да?» → команда следующей фразой. Речь без имени игнорируется.
 Скажи **«стоп» / «выход» / «хватит»** или нажми Ctrl-C для завершения.
 
 ## Как устроено
@@ -54,6 +56,7 @@ bash DS-exocortex/extensions/voice-loop/voice-loop.sh
 | `VOICE_CLAUDE_MODEL` | `haiku` | модель мозга (`haiku`/`sonnet`/`opus`) |
 | `VOICE_CLAUDE_PERM` | `bypassPermissions` | режим прав агента (hands-free → без запросов) |
 | `VOICE_EXTRA_DIRS` | `…/Vault1` | папки вне рабочей, доступные агенту (через `:`) |
+| `VOICE_WAKE` | `клод,клот,…` | wake-слова через `,` (как «эй Siri»); `off` = всегда слушать |
 | `VOICE_CPU_THREADS` | `8` | потоки CPU для распознавания |
 | `VOICE_PERF` | `1` | печатать тайминги (распознавание / до первого звука / весь ответ) |
 
