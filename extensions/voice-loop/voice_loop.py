@@ -270,9 +270,8 @@ def clean_for_speech(text):
 # не закрывается между фразами → нечему обрывать. Запись в pipe блокируется в темпе
 # воспроизведения (естественный backpressure) — фразы играются по очереди слитно.
 _piper = None
-_player = None          # subprocess ffmpeg: s16le pipe → pulse
+_player = None          # subprocess ffmpeg: s16le pipe → pulse (открыт на ход)
 _player_rate = None
-_play_until = 0.0       # wall-clock, когда допоёт весь отправленный звук
 
 def _ensure_player(rate):
     global _player, _player_rate
@@ -293,11 +292,14 @@ def _ensure_player(rate):
     return _player
 
 def _close_player():
+    """Закрыть поток и ДОЖДАТЬСЯ слива (ffmpeg доигрывает остаток в pulse и выходит).
+    Вызывать перед записью: гарантирует, что короткий ответ ('Москва') точно прозвучал,
+    и освобождает RDP-аудиоканал для микрофона."""
     global _player
     if _player is not None:
         try:
             _player.stdin.close()
-            _player.wait(timeout=10)   # дать доиграть буфер
+            _player.wait(timeout=30)   # дать доиграть весь буфер
         except Exception:
             try:
                 _player.kill()
@@ -338,20 +340,8 @@ def speak(text):
             player = _ensure_player(rate)
             player.stdin.write(pcm + pause)
             player.stdin.flush()
-        # двигаем «часы воспроизведения» на длительность этого куска
-        global _play_until
-        dur = len(pcm) / (2 * rate) + 0.18
-        _play_until = max(time.time(), _play_until) + dur
     finally:
         os.unlink(out)
-
-def wait_drain():
-    """Ждёт, пока колонки допоют весь отправленный звук. Нужно ПЕРЕД записью:
-    в WSL микрофон и колонки делят один RDP-канал, и открытие записи обрывает
-    ещё доигрывающее воспроизведение ('начал, но оборвался')."""
-    extra = _play_until - time.time()
-    if extra > 0:
-        time.sleep(extra + 0.15)   # запас на буфер pulse
 
 # ── Потоковая озвучка: режем поток на фразы, играем из очереди ───────────────
 import asyncio, time
@@ -470,7 +460,7 @@ async def amain():
         turn = 0
         while True:
             try:
-                await asyncio.to_thread(wait_drain)  # дать колонкам допеть до записи
+                await asyncio.to_thread(_close_player)  # слить звук до записи
                 pcm = await asyncio.to_thread(record_utterance)
                 if len(pcm) < FRAME_BYTES * 5:
                     continue
@@ -488,7 +478,7 @@ async def amain():
                 if cmd == "":
                     # сказали только имя → отзываюсь и слушаю команду следующей фразой
                     await asyncio.to_thread(speak, "Да?")
-                    await asyncio.to_thread(wait_drain)
+                    await asyncio.to_thread(_close_player)
                     pcm = await asyncio.to_thread(record_utterance)
                     if len(pcm) < FRAME_BYTES * 5:
                         continue
