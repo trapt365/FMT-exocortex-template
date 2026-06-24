@@ -52,7 +52,8 @@ bash DS-exocortex/extensions/voice-loop/voice-loop.sh
 | `VOICE_END_SILENCE_MS` | `900` | пауза, после которой фраза считается законченной |
 | `VOICE_START_FACTOR` | `3.5` | чувствительность старта (выше = строже к шуму) |
 | `VOICE_CLAUDE_MODEL` | `haiku` | модель мозга (`haiku`/`sonnet`/`opus`) |
-| `VOICE_CLAUDE_PERM` | `acceptEdits` | режим прав агента |
+| `VOICE_CLAUDE_PERM` | `bypassPermissions` | режим прав агента (hands-free → без запросов) |
+| `VOICE_EXTRA_DIRS` | `…/Vault1` | папки вне рабочей, доступные агенту (через `:`) |
 | `VOICE_CPU_THREADS` | `8` | потоки CPU для распознавания |
 | `VOICE_PERF` | `1` | печатать тайминги (распознавание / до первого звука / весь ответ) |
 

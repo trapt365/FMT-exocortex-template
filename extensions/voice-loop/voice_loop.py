@@ -40,8 +40,13 @@ WHISPER_MODEL = os.environ.get("VOICE_WHISPER_MODEL", "small")
 WHISPER_LANG  = os.environ.get("VOICE_LANG", "ru")
 PIPER_MODEL   = os.environ.get("VOICE_PIPER_MODEL", str(HERE / "voices" / "ru_RU-dmitri-medium.onnx"))
 
-CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "acceptEdits")  # режим прав claude -p
+# bypassPermissions: hands-free → подтверждать запросы прав руками нельзя; своя машина.
+CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "bypassPermissions")
 CLAUDE_CWD    = os.environ.get("VOICE_CLAUDE_CWD", str(Path.home() / "IWE"))
+# Доп. папки за пределами рабочей (SDK иначе не пускает инструменты вне cwd).
+# Vault1 (Obsidian) — нужен для запасов, заметок и т.п. Список через ':'.
+_extra = os.environ.get("VOICE_EXTRA_DIRS", "/mnt/c/Users/Timur/Documents/Vault1")
+CLAUDE_EXTRA_DIRS = [d for d in _extra.split(":") if d and Path(d).exists()]
 CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "haiku")  # голос: самый быстрый
 VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
     "Ты отвечаешь пользователю ГОЛОСОМ — ответ озвучивается вслух. Говори живой речью, "
@@ -418,7 +423,10 @@ async def amain():
     opts = ClaudeAgentOptions(model=CLAUDE_MODEL, cwd=CLAUDE_CWD,
                               permission_mode=CLAUDE_PERMISSION,
                               system_prompt=VOICE_SYSTEM,
+                              add_dirs=CLAUDE_EXTRA_DIRS,       # доступ к Vault1 и т.п.
                               include_partial_messages=True)  # потоковая выдача → ранняя озвучка
+    if CLAUDE_EXTRA_DIRS:
+        log(f"доступ к папкам вне рабочей: {', '.join(CLAUDE_EXTRA_DIRS)}")
     log("прогреваю мозг (один раз загружаю контекст IWE, ~30с)…")
     async with ClaudeSDKClient(opts) as client:
         await ask_claude(client, "Готов? Ответь одним словом: готов.")
