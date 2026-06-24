@@ -233,8 +233,12 @@ def speak(text):
             _piper.synthesize_wav(text, wf)
         # Воспроизведение через ffmpeg->pulse: ffplay по умолчанию идёт в ALSA,
         # которого в WSL нет; pulse (RDPSink) — единственный рабочий путь.
+        # apad: добавляем ~0.5с тишины в конец. ffmpeg завершается раньше, чем
+        # pulse доиграет буфер; старт следующей фразы обрезает хвост текущей —
+        # с подушкой обрезается тишина, а не последние слова.
         subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error",
-                        "-i", out, "-f", "pulse", "voice-loop"], check=False)
+                        "-i", out, "-af", "apad=pad_dur=0.5",
+                        "-f", "pulse", "voice-loop"], check=False)
     finally:
         os.unlink(out)
 
@@ -247,24 +251,16 @@ SENT_END = re.compile(r"[.!?…]+[\s\")\)]|[\n\r]+")
 MIN_SENT_CHARS = 10  # короче — копим дальше, чтобы не дробить на огрызки
 
 def split_sentences(buf):
-    """Возвращает (готовые_фразы, остаток_буфера)."""
+    """Возвращает (готовые_фразы, остаток_буфера). Короткие огрызки (< MIN_SENT_CHARS)
+    приклеиваются к следующему сегменту, а не режутся (иначе «Да.» уходит отдельно)."""
     out = []
-    while True:
-        m = SENT_END.search(buf)
-        if not m:
-            break
-        cut = m.end()
-        head = buf[:cut].strip()
-        rest = buf[cut:]
-        if len(head) < MIN_SENT_CHARS:
-            # слишком коротко — не режем здесь, ждём продолжения
-            nxt = SENT_END.search(buf, cut)
-            if not nxt:
-                break
-            continue
-        out.append(head)
-        buf = rest
-    return out, buf
+    last = 0
+    for m in SENT_END.finditer(buf):
+        seg = buf[last:m.end()].strip()
+        if len(seg) >= MIN_SENT_CHARS:
+            out.append(seg)
+            last = m.end()
+    return out, buf[last:]
 
 async def speak_worker(queue):
     """Берёт фразы из очереди и проговаривает по одной (синтез+воспроизведение)."""
@@ -300,7 +296,8 @@ async def stream_and_speak(client, heard):
         await queue.put(tail)
     await queue.put(None)
     await worker
-    return " ".join(full).strip() or "(пустой ответ)", t_first, time.time() - t0
+    # дельты уже содержат свои пробелы — склеиваем без разделителя
+    return "".join(full).strip() or "(пустой ответ)", t_first, time.time() - t0
 
 async def amain():
     if not shutil.which("ffmpeg"):
