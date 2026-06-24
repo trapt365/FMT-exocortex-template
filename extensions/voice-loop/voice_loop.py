@@ -41,6 +41,14 @@ PIPER_MODEL   = os.environ.get("VOICE_PIPER_MODEL", str(HERE / "voices" / "ru_RU
 
 CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "acceptEdits")  # режим прав claude -p
 CLAUDE_CWD    = os.environ.get("VOICE_CLAUDE_CWD", str(Path.home() / "IWE"))
+CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "sonnet")  # для голоса быстрее тяжёлой
+VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
+    "Ты отвечаешь пользователю ГОЛОСОМ — ответ будет озвучен вслух. "
+    "Отвечай кратко и разговорно, 1-3 предложения, обычным текстом. "
+    "Запрещено: markdown, звёздочки, решётки, маркеры списков, заголовки, "
+    "блоки кода, ссылки, таблицы. Не зачитывай пути к файлам и технические "
+    "идентификаторы — говори по-человечески. Если задача требует длинной работы, "
+    "сделай её и коротко скажи результат.")
 
 STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit", "пока"}
 
@@ -147,7 +155,9 @@ _session_id = None
 def ask_claude(text):
     global _session_id
     cmd = ["claude", "-p", text, "--output-format", "json",
-           "--permission-mode", CLAUDE_PERMISSION]
+           "--permission-mode", CLAUDE_PERMISSION,
+           "--model", CLAUDE_MODEL,
+           "--append-system-prompt", VOICE_SYSTEM]
     if _session_id:
         cmd += ["--resume", _session_id]
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=CLAUDE_CWD)
@@ -160,10 +170,28 @@ def ask_claude(text):
     except json.JSONDecodeError:
         return res.stdout.strip()[:500] or "(не разобрал ответ)"
 
-# ── TTS (piper → ffplay) ─────────────────────────────────────────────────────
+# ── Чистка текста под озвучку (снимаем markdown/спецзнаки) ───────────────────
+import re
+def clean_for_speech(text):
+    t = text
+    t = re.sub(r"```.*?```", " ", t, flags=re.S)        # блоки кода
+    t = re.sub(r"`([^`]*)`", r"\1", t)                   # инлайн-код
+    t = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", t)        # ссылки [текст](url)
+    t = re.sub(r"https?://\S+", " ", t)                   # голые url
+    t = re.sub(r"[*_#>~|]", "", t)                        # markdown-символы
+    t = re.sub(r"^\s*[-•]\s+", "", t, flags=re.M)         # маркеры списков
+    t = re.sub(r"^\s*\d+\.\s+", "", t, flags=re.M)        # нумерация списков
+    t = re.sub(r"[ \t]+", " ", t)
+    t = re.sub(r"\n{2,}", ". ", t)
+    return t.strip()
+
+# ── TTS (piper → pulse) ──────────────────────────────────────────────────────
 _piper = None
 def speak(text):
     global _piper
+    if not text:
+        return
+    text = clean_for_speech(text)
     if not text:
         return
     if _piper is None:
