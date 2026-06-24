@@ -178,8 +178,10 @@ def speak(text):
     try:
         with wave.open(out, "wb") as wf:
             _piper.synthesize_wav(text, wf)
-        subprocess.run(["ffplay", "-hide_banner", "-loglevel", "quiet",
-                        "-nodisp", "-autoexit", out], check=False)
+        # Воспроизведение через ffmpeg->pulse: ffplay по умолчанию идёт в ALSA,
+        # которого в WSL нет; pulse (RDPSink) — единственный рабочий путь.
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error",
+                        "-i", out, "-f", "pulse", "voice-loop"], check=False)
     finally:
         os.unlink(out)
 
