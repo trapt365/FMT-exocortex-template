@@ -44,13 +44,14 @@ CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "acceptEdits")  # реж
 CLAUDE_CWD    = os.environ.get("VOICE_CLAUDE_CWD", str(Path.home() / "IWE"))
 CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "haiku")  # голос: самый быстрый
 VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
-    "Ты отвечаешь пользователю ГОЛОСОМ — ответ озвучивается вслух, и речь длится "
-    "столько же, сколько текст. Поэтому будь предельно краток: МАКСИМУМ 2 коротких "
-    "предложения. СТРОГО ЗАПРЕЩЕНО перечислять списком — даже если просят 'приоритеты' "
-    "или 'список', назови ТОЛЬКО самое главное одним предложением и спроси, нужны ли "
-    "детали. Никакого markdown, звёздочек, решёток, кода, ссылок, путей к файлам, "
-    "технических кодов — говори по-человечески, как в живом разговоре. "
-    "Длинную работу выполни и скажи итог одной фразой.")
+    "Ты отвечаешь пользователю ГОЛОСОМ — ответ озвучивается вслух. Говори живой речью, "
+    "короткими предложениями (так озвучка успевает начаться раньше). По умолчанию — "
+    "1-2 фразы и только суть. Если просят перечислить (план, приоритеты, список) — "
+    "перечисляй устно, обычными предложениями: 'первое… второе…', КОРОТКО по каждому "
+    "пункту, без воды. НИКАКОГО markdown: ни звёздочек, ни решёток, ни кода, ни ссылок, "
+    "ни путей к файлам, ни технических кодов — произноси по-человечески, как в разговоре. "
+    "Числа и время проговаривай словами естественно. Длинную работу выполни молча и "
+    "скажи итог одной фразой.")
 PERF          = os.environ.get("VOICE_PERF", "1") == "1"  # печатать тайминги этапов
 
 STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit", "пока"}
@@ -159,6 +160,7 @@ def transcribe(pcm):
 # Холодный `claude -p` стартует ~9-20с КАЖДЫЙ раз (грузит контекст IWE заново).
 # Постоянная сессия через ClaudeSDKClient: прогрев один раз, далее ~3-6с/круг.
 async def ask_claude(client, text):
+    """Непотоковый сбор всего ответа (для прогрева)."""
     from claude_agent_sdk import AssistantMessage
     await client.query(text)
     parts = []
@@ -169,6 +171,29 @@ async def ask_claude(client, text):
                 if t:
                     parts.append(t)
     return " ".join(parts).strip() or "(пустой ответ)"
+
+async def stream_claude(client, text):
+    """Отдаёт ответ кусками текста по мере генерации (дельты токенов).
+    Это позволяет начинать озвучку первой фразы, пока хвост ещё пишется."""
+    from claude_agent_sdk import StreamEvent, AssistantMessage
+    await client.query(text)
+    got_delta = False
+    async for msg in client.receive_response():
+        if isinstance(msg, StreamEvent):
+            ev = msg.event
+            if ev.get("type") == "content_block_delta":
+                d = ev.get("delta", {})
+                if d.get("type") == "text_delta":
+                    piece = d.get("text", "")
+                    if piece:
+                        got_delta = True
+                        yield piece
+        elif isinstance(msg, AssistantMessage) and not got_delta:
+            # запасной путь: если дельты не пришли — отдаём текст целиком
+            for b in msg.content:
+                t = getattr(b, "text", None)
+                if t:
+                    yield t
 
 # ── Чистка текста под озвучку (снимаем markdown/спецзнаки) ───────────────────
 import re
@@ -213,8 +238,69 @@ def speak(text):
     finally:
         os.unlink(out)
 
-# ── Главный цикл ──────────────────────────────────────────────────────────────
+# ── Потоковая озвучка: режем поток на фразы, играем из очереди ───────────────
 import asyncio, time
+
+# Граница фразы: знак конца + пробел/скобка/конец, ИЛИ перевод строки.
+# Требование пробела после точки не даёт резать «0.5» или «07:30».
+SENT_END = re.compile(r"[.!?…]+[\s\")\)]|[\n\r]+")
+MIN_SENT_CHARS = 10  # короче — копим дальше, чтобы не дробить на огрызки
+
+def split_sentences(buf):
+    """Возвращает (готовые_фразы, остаток_буфера)."""
+    out = []
+    while True:
+        m = SENT_END.search(buf)
+        if not m:
+            break
+        cut = m.end()
+        head = buf[:cut].strip()
+        rest = buf[cut:]
+        if len(head) < MIN_SENT_CHARS:
+            # слишком коротко — не режем здесь, ждём продолжения
+            nxt = SENT_END.search(buf, cut)
+            if not nxt:
+                break
+            continue
+        out.append(head)
+        buf = rest
+    return out, buf
+
+async def speak_worker(queue):
+    """Берёт фразы из очереди и проговаривает по одной (синтез+воспроизведение)."""
+    while True:
+        sent = await queue.get()
+        if sent is None:
+            queue.task_done()
+            break
+        await asyncio.to_thread(speak, sent)
+        queue.task_done()
+
+async def stream_and_speak(client, heard):
+    """Стримит ответ мозга, отправляя готовые фразы в озвучку на лету.
+    Возвращает (полный_текст, время_до_первого_звука, общее_время)."""
+    queue = asyncio.Queue()
+    worker = asyncio.create_task(speak_worker(queue))
+    t0 = time.time()
+    t_first = None
+    buf = ""
+    full = []
+    async for piece in stream_claude(client, heard):
+        full.append(piece)
+        buf += piece
+        sents, buf = split_sentences(buf)
+        for s in sents:
+            if t_first is None:
+                t_first = time.time() - t0
+            await queue.put(s)
+    tail = buf.strip()
+    if tail:
+        if t_first is None:
+            t_first = time.time() - t0
+        await queue.put(tail)
+    await queue.put(None)
+    await worker
+    return " ".join(full).strip() or "(пустой ответ)", t_first, time.time() - t0
 
 async def amain():
     if not shutil.which("ffmpeg"):
@@ -222,7 +308,8 @@ async def amain():
     from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
     opts = ClaudeAgentOptions(model=CLAUDE_MODEL, cwd=CLAUDE_CWD,
                               permission_mode=CLAUDE_PERMISSION,
-                              system_prompt=VOICE_SYSTEM)
+                              system_prompt=VOICE_SYSTEM,
+                              include_partial_messages=True)  # потоковая выдача → ранняя озвучка
     log("прогреваю мозг (один раз загружаю контекст IWE, ~30с)…")
     async with ClaudeSDKClient(opts) as client:
         await ask_claude(client, "Готов? Ответь одним словом: готов.")
@@ -243,15 +330,11 @@ async def amain():
                 if any(w == low or low.startswith(w + " ") or low.endswith(" " + w) for w in STOP_WORDS):
                     await asyncio.to_thread(speak, "Останавливаюсь. Пока.")
                     break
-                t1 = time.time()
-                reply = await ask_claude(client, heard)
-                t_brain = time.time() - t1
+                reply, t_first, t_answer = await stream_and_speak(client, heard)
                 print(f"\033[33m[claude]\033[0m {reply}", flush=True)
-                t2 = time.time()
-                await asyncio.to_thread(speak, reply)
-                t_tts = time.time() - t2
                 if PERF:
-                    log(f"⏱ распознавание {t_stt:.1f}с · мозг {t_brain:.1f}с · озвучка {t_tts:.1f}с")
+                    fa = f"{t_first:.1f}с" if t_first is not None else "—"
+                    log(f"⏱ распознавание {t_stt:.1f}с · до первого звука {fa} · весь ответ {t_answer:.1f}с")
             except KeyboardInterrupt:
                 print()
                 break
