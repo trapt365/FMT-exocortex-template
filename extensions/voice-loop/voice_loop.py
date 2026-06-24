@@ -48,10 +48,14 @@ VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
     "короткими предложениями (так озвучка успевает начаться раньше). По умолчанию — "
     "1-2 фразы и только суть. Если просят перечислить (план, приоритеты, список) — "
     "перечисляй устно, обычными предложениями: 'первое… второе…', КОРОТКО по каждому "
-    "пункту, без воды. НИКАКОГО markdown: ни звёздочек, ни решёток, ни кода, ни ссылок, "
-    "ни путей к файлам, ни технических кодов — произноси по-человечески, как в разговоре. "
-    "Числа и время проговаривай словами естественно. Длинную работу выполни молча и "
-    "скажи итог одной фразой.")
+    "пункту, без воды. "
+    "НЕ зачитывай вслух свои шаги ('запускаю', 'проверяю', 'давайте посмотрим') — твои "
+    "действия и так озвучиваются системой автоматически. Просто делай и в КОНЦЕ скажи "
+    "итог одной короткой фразой. Действуй решительно: не исследуй лишнего, выполни "
+    "команду кратчайшим путём. "
+    "НИКАКОГО markdown: ни звёздочек, ни решёток, ни кода, ни ссылок, ни путей к файлам, "
+    "ни технических кодов — произноси по-человечески, как в разговоре. Числа и время "
+    "проговаривай словами естественно.")
 PERF          = os.environ.get("VOICE_PERF", "1") == "1"  # печатать тайминги этапов
 
 STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit", "пока"}
@@ -237,8 +241,47 @@ def clean_for_speech(text):
     t = re.sub(r"\n{2,}", ". ", t)
     return t.strip()
 
-# ── TTS (piper → pulse) ──────────────────────────────────────────────────────
+# ── TTS (piper → один непрерывный поток в pulse) ─────────────────────────────
+# Раньше каждая фраза игралась отдельным ffmpeg; старт следующего обрывал хвост
+# предыдущего из аудиобуфера WSL (отсюда «обрезает фразы»). Теперь держим ОДИН
+# процесс ffmpeg, читающий сырой PCM из pipe → один pulse-поток на сессию, который
+# не закрывается между фразами → нечему обрывать. Запись в pipe блокируется в темпе
+# воспроизведения (естественный backpressure) — фразы играются по очереди слитно.
 _piper = None
+_player = None          # subprocess ffmpeg: s16le pipe → pulse
+_player_rate = None
+
+def _ensure_player(rate):
+    global _player, _player_rate
+    if _player is not None and _player.poll() is None and _player_rate == rate:
+        return _player
+    if _player is not None:
+        try:
+            _player.stdin.close()
+            _player.terminate()
+        except Exception:
+            pass
+    _player = subprocess.Popen(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error",
+         "-f", "s16le", "-ar", str(rate), "-ac", "1", "-i", "pipe:0",
+         "-f", "pulse", "voice-loop"],
+        stdin=subprocess.PIPE)
+    _player_rate = rate
+    return _player
+
+def _close_player():
+    global _player
+    if _player is not None:
+        try:
+            _player.stdin.close()
+            _player.wait(timeout=10)   # дать доиграть буфер
+        except Exception:
+            try:
+                _player.kill()
+            except Exception:
+                pass
+        _player = None
+
 def speak(text):
     global _piper
     if not text:
@@ -258,23 +301,30 @@ def speak(text):
     try:
         with wave.open(out, "wb") as wf:
             _piper.synthesize_wav(text, wf)
-        # Воспроизведение через ffmpeg->pulse: ffplay по умолчанию идёт в ALSA,
-        # которого в WSL нет; pulse (RDPSink) — единственный рабочий путь.
-        # apad: добавляем ~0.5с тишины в конец. ffmpeg завершается раньше, чем
-        # pulse доиграет буфер; старт следующей фразы обрезает хвост текущей —
-        # с подушкой обрезается тишина, а не последние слова.
-        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error",
-                        "-i", out, "-af", "apad=pad_dur=0.5",
-                        "-f", "pulse", "voice-loop"], check=False)
+        with wave.open(out, "rb") as wf:
+            rate = wf.getframerate()
+            pcm = wf.readframes(wf.getnframes())
+        # короткая пауза между фразами, чтобы слова не сливались
+        pause = b"\x00\x00" * int(rate * 0.18)
+        player = _ensure_player(rate)
+        try:
+            player.stdin.write(pcm + pause)
+            player.stdin.flush()
+        except (BrokenPipeError, ValueError):
+            # поток умер — пересоздаём и пробуем один раз
+            player = _ensure_player(rate)
+            player.stdin.write(pcm + pause)
+            player.stdin.flush()
     finally:
         os.unlink(out)
 
 # ── Потоковая озвучка: режем поток на фразы, играем из очереди ───────────────
 import asyncio, time
 
-# Граница фразы: знак конца + пробел/скобка/конец, ИЛИ перевод строки.
-# Требование пробела после точки не даёт резать «0.5» или «07:30».
-SENT_END = re.compile(r"[.!?…]+[\s\")\)]|[\n\r]+")
+# Граница фразы: знак конца, за которым пробел/кавычка/скобка ИЛИ сразу заглавная
+# (модель часто стримит без пробела: «аудиорефлексий.Проверяю»). Lookahead не съедает
+# следующий символ. «0.5» и «07:30» не режутся (после точки цифра, не пробел/заглавная).
+SENT_END = re.compile(r"[.!?…]+(?=[\s\"')\]]|[А-ЯЁA-Z])|[\n\r]+")
 MIN_SENT_CHARS = 10  # короче — копим дальше, чтобы не дробить на огрызки
 
 def split_sentences(buf):
@@ -382,6 +432,7 @@ async def amain():
                 break
             except Exception as e:
                 log(f"ошибка в цикле: {e}")
+        await asyncio.to_thread(_close_player)  # дать доиграть последнюю фразу
     log("цикл завершён.")
 
 if __name__ == "__main__":
