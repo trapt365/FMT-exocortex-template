@@ -15,11 +15,15 @@ bash DS-exocortex/extensions/voice-loop/voice-loop.sh
 
 ```
 микрофон → ffmpeg (PulseServer) → VAD по энергии → faster-whisper (STT, локально)
-  → claude -p (онлайн мозг, держит сессию через session_id) → piper (TTS, локально) → ffplay
+  → ClaudeSDKClient (живая сессия, онлайн мозг) → piper (TTS, локально) → ffmpeg→pulse
 ```
 
-- **STT и TTS локальные** → переиспользуются в офлайн-фазе (Ойтал); сейчас мозг онлайн (`claude -p`).
-- `claude -p` запускается в `~/IWE`, поэтому видит CLAUDE.md и контекст РП.
+- **STT и TTS локальные** → переиспользуются в офлайн-фазе (Ойтал); сейчас мозг онлайн.
+- **Живая сессия (ключ к скорости):** мозг держится одним процессом через `ClaudeSDKClient`.
+  Контекст IWE грузится ОДИН раз при старте (прогрев ~30с), дальше круг ~3-6с. Холодный
+  `claude -p` стартовал бы ~20с КАЖДЫЙ раз — поэтому от него отказались.
+- Сессия запускается в `~/IWE`, поэтому видит CLAUDE.md и контекст РП.
+- Воспроизведение через `ffmpeg→pulse` (не ffplay: тот идёт в ALSA, которого в WSL нет).
 
 ## Настройки (env)
 
@@ -30,13 +34,15 @@ bash DS-exocortex/extensions/voice-loop/voice-loop.sh
 | `VOICE_PIPER_MODEL` | `voices/ru_RU-dmitri-medium.onnx` | голос озвучки |
 | `VOICE_END_SILENCE_MS` | `900` | пауза, после которой фраза считается законченной |
 | `VOICE_START_FACTOR` | `3.5` | чувствительность старта (выше = строже к шуму) |
-| `VOICE_CLAUDE_PERM` | `acceptEdits` | режим прав `claude -p` |
+| `VOICE_CLAUDE_MODEL` | `haiku` | модель мозга (`haiku`/`sonnet`/`opus`) |
+| `VOICE_CLAUDE_PERM` | `acceptEdits` | режим прав агента |
 | `VOICE_CPU_THREADS` | `8` | потоки CPU для распознавания |
+| `VOICE_PERF` | `1` | печатать тайминги этапов (распознавание/мозг/озвучка) |
 
 ## Зависимости
 
-- `ffmpeg`, `ffplay` (есть в системе)
-- `faster-whisper`, `piper-tts` (pip --user)
+- `ffmpeg` (запись + воспроизведение через pulse; есть в системе)
+- `faster-whisper`, `piper-tts`, `claude-agent-sdk` (pip --user)
 - голос piper: `python3 -m piper.download_voices ru_RU-dmitri-medium --download-dir voices`
 
 ## Известные ограничения (Ф1 MVP)

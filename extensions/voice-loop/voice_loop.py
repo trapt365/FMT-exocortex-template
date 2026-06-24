@@ -41,14 +41,15 @@ PIPER_MODEL   = os.environ.get("VOICE_PIPER_MODEL", str(HERE / "voices" / "ru_RU
 
 CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "acceptEdits")  # режим прав claude -p
 CLAUDE_CWD    = os.environ.get("VOICE_CLAUDE_CWD", str(Path.home() / "IWE"))
-CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "sonnet")  # для голоса быстрее тяжёлой
+CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "haiku")  # голос: самый быстрый
 VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
     "Ты отвечаешь пользователю ГОЛОСОМ — ответ будет озвучен вслух. "
-    "Отвечай кратко и разговорно, 1-3 предложения, обычным текстом. "
+    "Отвечай ОЧЕНЬ кратко и разговорно, максимум 1-2 предложения, обычным текстом. "
     "Запрещено: markdown, звёздочки, решётки, маркеры списков, заголовки, "
     "блоки кода, ссылки, таблицы. Не зачитывай пути к файлам и технические "
     "идентификаторы — говори по-человечески. Если задача требует длинной работы, "
     "сделай её и коротко скажи результат.")
+PERF          = os.environ.get("VOICE_PERF", "1") == "1"  # печатать тайминги этапов
 
 STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit", "пока"}
 
@@ -150,25 +151,20 @@ def transcribe(pcm):
     finally:
         os.unlink(wav_path)
 
-# ── Brain (claude -p, сессия держится через session_id) ──────────────────────
-_session_id = None
-def ask_claude(text):
-    global _session_id
-    cmd = ["claude", "-p", text, "--output-format", "json",
-           "--permission-mode", CLAUDE_PERMISSION,
-           "--model", CLAUDE_MODEL,
-           "--append-system-prompt", VOICE_SYSTEM]
-    if _session_id:
-        cmd += ["--resume", _session_id]
-    res = subprocess.run(cmd, capture_output=True, text=True, cwd=CLAUDE_CWD)
-    if res.returncode != 0:
-        return f"Ошибка Claude: {res.stderr.strip()[:200]}"
-    try:
-        data = json.loads(res.stdout)
-        _session_id = data.get("session_id", _session_id)
-        return data.get("result", "").strip() or "(пустой ответ)"
-    except json.JSONDecodeError:
-        return res.stdout.strip()[:500] or "(не разобрал ответ)"
+# ── Brain (живая SDK-сессия: контекст грузится один раз, круги короткие) ──────
+# Холодный `claude -p` стартует ~9-20с КАЖДЫЙ раз (грузит контекст IWE заново).
+# Постоянная сессия через ClaudeSDKClient: прогрев один раз, далее ~3-6с/круг.
+async def ask_claude(client, text):
+    from claude_agent_sdk import AssistantMessage
+    await client.query(text)
+    parts = []
+    async for msg in client.receive_response():
+        if isinstance(msg, AssistantMessage):
+            for b in msg.content:
+                t = getattr(b, "text", None)
+                if t:
+                    parts.append(t)
+    return " ".join(parts).strip() or "(пустой ответ)"
 
 # ── Чистка текста под озвучку (снимаем markdown/спецзнаки) ───────────────────
 import re
@@ -214,33 +210,53 @@ def speak(text):
         os.unlink(out)
 
 # ── Главный цикл ──────────────────────────────────────────────────────────────
-def main():
-    for tool in ("ffmpeg", "ffplay"):
-        if not shutil.which(tool):
-            sys.exit(f"нет {tool} в PATH")
-    log("голосовой цикл IWE запущен. Скажи «стоп» для выхода.")
-    while True:
-        try:
-            pcm = record_utterance()
-            if len(pcm) < FRAME_BYTES * 5:
-                continue
-            heard = transcribe(pcm)
-            if not heard:
-                continue
-            print(f"\033[32m[ты]\033[0m {heard}", flush=True)
-            low = heard.lower().strip(" .,!?")
-            if any(w == low or low.startswith(w + " ") or low.endswith(" " + w) for w in STOP_WORDS):
-                speak("Останавливаюсь. Пока.")
+import asyncio, time
+
+async def amain():
+    if not shutil.which("ffmpeg"):
+        sys.exit("нет ffmpeg в PATH")
+    from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
+    opts = ClaudeAgentOptions(model=CLAUDE_MODEL, cwd=CLAUDE_CWD,
+                              permission_mode=CLAUDE_PERMISSION,
+                              system_prompt=VOICE_SYSTEM)
+    log("прогреваю мозг (один раз загружаю контекст IWE, ~30с)…")
+    async with ClaudeSDKClient(opts) as client:
+        await ask_claude(client, "Готов? Ответь одним словом: готов.")
+        log("готов. Скажи «стоп» для выхода — говори.")
+        await asyncio.to_thread(speak, "Готов, говори.")
+        while True:
+            try:
+                pcm = await asyncio.to_thread(record_utterance)
+                if len(pcm) < FRAME_BYTES * 5:
+                    continue
+                t0 = time.time()
+                heard = await asyncio.to_thread(transcribe, pcm)
+                t_stt = time.time() - t0
+                if not heard:
+                    continue
+                print(f"\033[32m[ты]\033[0m {heard}", flush=True)
+                low = heard.lower().strip(" .,!?")
+                if any(w == low or low.startswith(w + " ") or low.endswith(" " + w) for w in STOP_WORDS):
+                    await asyncio.to_thread(speak, "Останавливаюсь. Пока.")
+                    break
+                t1 = time.time()
+                reply = await ask_claude(client, heard)
+                t_brain = time.time() - t1
+                print(f"\033[33m[claude]\033[0m {reply}", flush=True)
+                t2 = time.time()
+                await asyncio.to_thread(speak, reply)
+                t_tts = time.time() - t2
+                if PERF:
+                    log(f"⏱ распознавание {t_stt:.1f}с · мозг {t_brain:.1f}с · озвучка {t_tts:.1f}с")
+            except KeyboardInterrupt:
+                print()
                 break
-            reply = ask_claude(heard)
-            print(f"\033[33m[claude]\033[0m {reply}", flush=True)
-            speak(reply)
-        except KeyboardInterrupt:
-            print()
-            break
-        except Exception as e:
-            log(f"ошибка в цикле: {e}")
+            except Exception as e:
+                log(f"ошибка в цикле: {e}")
     log("цикл завершён.")
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(amain())
+    except KeyboardInterrupt:
+        pass
