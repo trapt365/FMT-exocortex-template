@@ -172,10 +172,36 @@ async def ask_claude(client, text):
                     parts.append(t)
     return " ".join(parts).strip() or "(пустой ответ)"
 
-async def stream_claude(client, text):
-    """Отдаёт ответ кусками текста по мере генерации (дельты токенов).
-    Это позволяет начинать озвучку первой фразы, пока хвост ещё пишется."""
-    from claude_agent_sdk import StreamEvent, AssistantMessage
+# Короткие человеческие фразы для озвучки действий агента по ходу работы.
+TOOL_PHRASES = {
+    "Read": "читаю файл", "Glob": "ищу файлы", "Grep": "ищу по тексту",
+    "Bash": "выполняю команду", "Write": "пишу файл", "Edit": "правлю файл",
+    "MultiEdit": "правлю файл", "NotebookEdit": "правлю блокнот",
+    "WebFetch": "смотрю страницу", "WebSearch": "ищу в интернете",
+    "Task": "запускаю помощника",
+}
+TOOL_SKIP = {"TodoWrite"}  # внутреннее — не озвучиваем
+
+def tool_detail(name, inp):
+    """Короткая деталь для печати в окно (не для озвучки — там чисто глагол)."""
+    inp = inp or {}
+    if name in ("Read", "Write", "Edit", "MultiEdit"):
+        p = inp.get("file_path", "")
+        return os.path.basename(p) if p else ""
+    if name == "Bash":
+        c = (inp.get("command", "") or "").strip().split()
+        return c[0] if c else ""
+    if name in ("Grep", "Glob"):
+        return inp.get("pattern", "") or inp.get("query", "")
+    if name in ("WebFetch", "WebSearch"):
+        return inp.get("query", "") or inp.get("url", "")
+    return ""
+
+async def stream_events(client, text):
+    """Отдаёт поток событий хода: ('text', дельта) по мере генерации и
+    ('tool', (имя, вход)) когда агент запускает инструмент. Текст идёт по токенам
+    (ранняя озвучка), действия — для проговаривания процесса."""
+    from claude_agent_sdk import StreamEvent, AssistantMessage, ToolUseBlock, TextBlock
     await client.query(text)
     got_delta = False
     async for msg in client.receive_response():
@@ -187,13 +213,14 @@ async def stream_claude(client, text):
                     piece = d.get("text", "")
                     if piece:
                         got_delta = True
-                        yield piece
-        elif isinstance(msg, AssistantMessage) and not got_delta:
-            # запасной путь: если дельты не пришли — отдаём текст целиком
+                        yield ("text", piece)
+        elif isinstance(msg, AssistantMessage):
             for b in msg.content:
-                t = getattr(b, "text", None)
-                if t:
-                    yield t
+                if isinstance(b, ToolUseBlock):
+                    yield ("tool", (b.name, b.input))
+                elif isinstance(b, TextBlock) and not got_delta and b.text:
+                    # запасной путь: дельты не пришли — отдаём текст целиком
+                    yield ("text", b.text)
 
 # ── Чистка текста под озвучку (снимаем markdown/спецзнаки) ───────────────────
 import re
@@ -273,22 +300,40 @@ async def speak_worker(queue):
         queue.task_done()
 
 async def stream_and_speak(client, heard):
-    """Стримит ответ мозга, отправляя готовые фразы в озвучку на лету.
-    Возвращает (полный_текст, время_до_первого_звука, общее_время)."""
+    """Стримит ход агента: проговаривает действия по ходу (читаю файл, выполняю
+    команду) и финальный ответ по фразам на лету. Возвращает
+    (полный_текст, время_до_первого_звука, общее_время)."""
     queue = asyncio.Queue()
     worker = asyncio.create_task(speak_worker(queue))
     t0 = time.time()
     t_first = None
     buf = ""
     full = []
-    async for piece in stream_claude(client, heard):
-        full.append(piece)
-        buf += piece
-        sents, buf = split_sentences(buf)
-        for s in sents:
-            if t_first is None:
-                t_first = time.time() - t0
-            await queue.put(s)
+    last_tool = None
+    async for kind, payload in stream_events(client, heard):
+        if kind == "text":
+            full.append(payload)
+            buf += payload
+            sents, buf = split_sentences(buf)
+            for s in sents:
+                if t_first is None:
+                    t_first = time.time() - t0
+                await queue.put(s)
+        elif kind == "tool":
+            name, inp = payload
+            if name in TOOL_SKIP:
+                continue
+            if buf.strip():            # доскажем недоговорённый текст перед действием
+                await queue.put(buf.strip())
+                buf = ""
+            detail = tool_detail(name, inp)
+            phrase = TOOL_PHRASES.get(name, "работаю")
+            print(f"\033[35m[…]\033[0m {phrase}" + (f" ({detail})" if detail else ""), flush=True)
+            if phrase != last_tool:    # не дублируем одинаковое подряд («читаю, читаю»)
+                if t_first is None:
+                    t_first = time.time() - t0
+                await queue.put(phrase + ".")
+                last_tool = phrase
     tail = buf.strip()
     if tail:
         if t_first is None:
@@ -297,7 +342,7 @@ async def stream_and_speak(client, heard):
     await queue.put(None)
     await worker
     # дельты уже содержат свои пробелы — склеиваем без разделителя
-    return "".join(full).strip() or "(пустой ответ)", t_first, time.time() - t0
+    return "".join(full).strip() or "(готово)", t_first, time.time() - t0
 
 async def amain():
     if not shutil.which("ffmpeg"):
