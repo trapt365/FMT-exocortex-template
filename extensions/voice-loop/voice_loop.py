@@ -30,6 +30,7 @@ SAMPLE_RATE   = 16000          # Гц, требование whisper
 FRAME_MS      = 30             # длина кадра VAD
 FRAME_BYTES   = int(SAMPLE_RATE * FRAME_MS / 1000) * 2  # 16-bit моно
 START_FACTOR  = float(os.environ.get("VOICE_START_FACTOR", "3.5"))  # порог старта = шум * фактор
+MIN_ABS_START = float(os.environ.get("VOICE_MIN_START", "200"))     # абс. минимум порога (фильтр шороха)
 END_SILENCE_MS= int(os.environ.get("VOICE_END_SILENCE_MS", "900"))  # тишина для конца фразы
 MIN_SPEECH_MS = 300            # короче — считаем шумом
 MAX_UTTER_MS  = int(os.environ.get("VOICE_MAX_UTTER_MS", "30000"))  # потолок длины фразы
@@ -43,12 +44,13 @@ CLAUDE_PERMISSION = os.environ.get("VOICE_CLAUDE_PERM", "acceptEdits")  # реж
 CLAUDE_CWD    = os.environ.get("VOICE_CLAUDE_CWD", str(Path.home() / "IWE"))
 CLAUDE_MODEL  = os.environ.get("VOICE_CLAUDE_MODEL", "haiku")  # голос: самый быстрый
 VOICE_SYSTEM  = os.environ.get("VOICE_SYSTEM_PROMPT",
-    "Ты отвечаешь пользователю ГОЛОСОМ — ответ будет озвучен вслух. "
-    "Отвечай ОЧЕНЬ кратко и разговорно, максимум 1-2 предложения, обычным текстом. "
-    "Запрещено: markdown, звёздочки, решётки, маркеры списков, заголовки, "
-    "блоки кода, ссылки, таблицы. Не зачитывай пути к файлам и технические "
-    "идентификаторы — говори по-человечески. Если задача требует длинной работы, "
-    "сделай её и коротко скажи результат.")
+    "Ты отвечаешь пользователю ГОЛОСОМ — ответ озвучивается вслух, и речь длится "
+    "столько же, сколько текст. Поэтому будь предельно краток: МАКСИМУМ 2 коротких "
+    "предложения. СТРОГО ЗАПРЕЩЕНО перечислять списком — даже если просят 'приоритеты' "
+    "или 'список', назови ТОЛЬКО самое главное одним предложением и спроси, нужны ли "
+    "детали. Никакого markdown, звёздочек, решёток, кода, ссылок, путей к файлам, "
+    "технических кодов — говори по-человечески, как в живом разговоре. "
+    "Длинную работу выполни и скажи итог одной фразой.")
 PERF          = os.environ.get("VOICE_PERF", "1") == "1"  # печатать тайминги этапов
 
 STOP_WORDS    = {"стоп", "выход", "хватит", "stop", "quit", "exit", "пока"}
@@ -80,7 +82,7 @@ def record_utterance():
                 break
             noise_frames.append(rms(f))
         noise_floor = max(1.0, sorted(noise_frames)[len(noise_frames) // 2] if noise_frames else 1.0)
-        start_thr = noise_floor * START_FACTOR
+        start_thr = max(noise_floor * START_FACTOR, MIN_ABS_START)
         log(f"шум≈{noise_floor:.0f}, порог старта≈{start_thr:.0f} — говори")
 
         preroll = []
@@ -146,7 +148,9 @@ def transcribe(pcm):
         wav_path = tf.name
     pcm_to_wav(pcm, wav_path)
     try:
-        segments, _ = _whisper.transcribe(wav_path, language=WHISPER_LANG, vad_filter=True)
+        segments, _ = _whisper.transcribe(
+            wav_path, language=WHISPER_LANG, vad_filter=True,
+            beam_size=1, condition_on_previous_text=False)
         return " ".join(s.text.strip() for s in segments).strip()
     finally:
         os.unlink(wav_path)
