@@ -137,7 +137,7 @@ echo "Все транскрипты получены. Категоризирую
 CATEGORIZED=$(echo "$ALL_TRANSCRIPTS" | "$CLAUDE_PATH" \
     --dangerously-skip-permissions \
     --allowedTools "" \
-    -p "Ты получил аудиозаписи. Каждая помечена временем [HH:MM]. Раздели их на две категории и выведи ТОЛЬКО результат без пояснений.
+    -p "Ты получил аудиозаписи. Каждая помечена временем [HH:MM]. Разложи их на ЧЕТЫРЕ категории и выведи ТОЛЬКО результат без пояснений. Всегда выводи все четыре заголовка (даже если раздел пустой — заголовок без строк).
 
 ## Хронометраж
 ТОЛЬКО краткие пинг-ответы формата «что сейчас делаю + тип активности» (П/И/Л/О/Д/ТО).
@@ -145,15 +145,27 @@ CATEGORIZED=$(echo "$ALL_TRANSCRIPTS" | "$CLAUDE_PATH" \
 Формат каждой строки: HH:MM — что делал (тип)
 Пример:
 14:30 — работаю над стратегией (И)
-16:15 — прогулка с детьми (Л)
+
+## Задачи
+То, что НАДО СДЕЛАТЬ: явные намерения «надо / не забыть / нужно / купить / позвонить / отправить / записаться».
+Формат каждой строки: глагол-действие + рабочий продукт (по Дорофееву), одна задача на строку, без времени.
+Пример:
+- Позвонить в сервис по поводу ГРМ (записаться на диагностику)
+- Купить мульчу для сада
+
+## Фундамент
+То, что пилот СЪЕЛ/ПРИГОТОВИЛ или ПОТРАТИЛ/КУПИЛ (быт: питание и финансы). ОБЯЗАТЕЛЬНО сохраняй числа: суммы, граммы, порции, ккал — если названы.
+Подстроки (пропусти пустую):
+Финансы: <что потратил/купил + сумма, если названа>
+Питание: <блюдо + количество (граммы/порции); несколько блюд через точку с запятой>
+Если количество блюда не названо — добавь к нему пометку «(кол-во?)».
 
 ## Scratchpad
-ВСЁ остальное: развёрнутые мысли, идеи, планы, выводы, наблюдения, события с контекстом, что нужно сделать.
+ВСЁ остальное: развёрнутые мысли, идеи, выводы, наблюдения, события с контекстом.
 Формат: буллеты без времени.
-Если запись содержит и пинг-ответ, и мысли — пинг → Хронометраж, мысли → сюда.
+Если запись содержит и пинг, и мысль, и задачу — разнеси части по разным разделам.
 
 Язык вывода: русский.
-Если раздел пустой — выведи заголовок без строк под ним.
 
 Транскрипты:
 $ALL_TRANSCRIPTS" 2>/dev/null)
@@ -169,6 +181,8 @@ fi
 
 # 4. Извлечь секции
 HRON_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Хронометраж/,/^## /{ /^## /d; p; }' | sed '/^$/d')
+TASKS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Задачи/,/^## /{ /^## /d; p; }' | sed '/^$/d')
+FUND_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Фундамент/,/^## /{ /^## /d; p; }' | sed '/^$/d')
 THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Scratchpad/,$ { /^## Scratchpad/d; p; }' | sed '/^$/d')
 
 # 5. Дописать в daily note
@@ -288,6 +302,92 @@ print('  Добавлено в Scratchpad')
 PYEOF
 
     rm -f "$THOUGHTS_TMPFILE"
+fi
+
+# 5b. Задачи → очередь Singularity Inbox + секция daily note (WP-40 Ф2)
+DS_STRATEGY="$HOME/IWE/DS-strategy"
+QUEUE="$DS_STRATEGY/inbox/singularity-queue.md"
+if [ -n "$TASKS_SECTION" ]; then
+    TASKS_TMPFILE=$(mktemp /tmp/tasks-XXXXX)
+    printf '%s' "$TASKS_SECTION" > "$TASKS_TMPFILE"
+    python3 - "$DAILY_NOTE" "$QUEUE" "$TASKS_TMPFILE" "$TARGET_DATE" << 'PYEOF'
+import os, re, sys
+note, queue, tf, date = sys.argv[1:5]
+tasks = [re.sub(r'^\s*[-*]\s*', '', l).strip() for l in open(tf, encoding='utf-8') if l.strip()]
+tasks = [t for t in tasks if t]
+if not tasks:
+    sys.exit(0)
+os.makedirs(os.path.dirname(queue), exist_ok=True)
+existing = (open(queue, encoding='utf-8').read() if os.path.isfile(queue)
+            else "# Очередь задач в Singularity Inbox\n\n> Наполняется обработчиком рефлексий (WP-40). Дренаж — при открытии сессии через MCP Singularity: создать незакрытые в Inbox, отметить [x].\n")
+added = 0
+for t in tasks:
+    if t not in existing:
+        existing = existing.rstrip() + f"\n- [ ] {t}  <!-- {date} -->"
+        added += 1
+open(queue, 'w', encoding='utf-8').write(existing.rstrip() + "\n")
+c = open(note, encoding='utf-8').read() if os.path.isfile(note) else "---\ntags:\n  - calendar\n---\n"
+marker = "### Задачи (→ Singularity)"
+block = "\n".join(f"- {t}" for t in tasks)
+if marker in c:
+    c = re.sub(r'(### Задачи \(→ Singularity\)\n)(.*?)(?=\n###|\n---|\Z)',
+               lambda m: m.group(1) + (m.group(2).rstrip() + "\n" + block + "\n"), c, count=1, flags=re.DOTALL)
+else:
+    c = c.rstrip() + f"\n\n{marker}\n{block}\n"
+open(note, 'w', encoding='utf-8').write(c)
+print(f'  Задачи: +{added} в очередь Singularity, {len(tasks)} в daily note')
+PYEOF
+    rm -f "$TASKS_TMPFILE"
+fi
+
+# 5c. Фундамент (еда/траты) → DayPlan (S-48) + очередь Cronometer (WP-40)
+if [ -n "$FUND_SECTION" ]; then
+    DAYPLAN="$DS_STRATEGY/current/DayPlan $TARGET_DATE.md"
+    CRONQ="$DS_STRATEGY/inbox/cronometer-queue.md"
+    FUND_TMPFILE=$(mktemp /tmp/fund-XXXXX)
+    printf '%s' "$FUND_SECTION" > "$FUND_TMPFILE"
+    python3 - "$DAYPLAN" "$FUND_TMPFILE" "$CRONQ" "$TARGET_DATE" << 'PYEOF'
+import os, re, sys
+dayplan, tf, cronq, date = sys.argv[1:5]
+lines = [l.strip() for l in open(tf, encoding='utf-8') if l.strip()]
+fin = [re.sub(r'(?i)^финансы:\s*', '', l) for l in lines if l.lower().startswith('финансы')]
+pit = [re.sub(r'(?i)^питание:\s*', '', l) for l in lines if l.lower().startswith('питание')]
+if not fin and not pit:
+    sys.exit(0)
+# 1) DayPlan «Фундамент»
+if os.path.isfile(dayplan):
+    c = open(dayplan, encoding='utf-8').read()
+    add = []
+    if fin: add.append('- Финансы: ' + '; '.join(fin))
+    if pit: add.append('- Питание: ' + '; '.join(pit))
+    block = "\n".join(add)
+    if '## Фундамент' in c:
+        c = re.sub(r'(## Фундамент\n)(.*?)(?=\n##|\n---|\Z)',
+                   lambda m: m.group(1) + (m.group(2).rstrip() + "\n" + block + "\n"), c, count=1, flags=re.DOTALL)
+    else:
+        c = c.rstrip() + f"\n\n## Фундамент\n{block}\n"
+    open(dayplan, 'w', encoding='utf-8').write(c)
+    print('  Фундамент: DayPlan обновлён')
+else:
+    print('  Фундамент: DayPlan не найден — пропускаю запись в план')
+# 2) Очередь Cronometer: каждое блюдо отдельной строкой (дренаж при Day Open через /cronometer)
+dishes = []
+for p in pit:
+    for d in re.split(r'[;.]\s*', p):
+        d = d.strip()
+        if d: dishes.append(d)
+if dishes:
+    os.makedirs(os.path.dirname(cronq), exist_ok=True)
+    existing = (open(cronq, encoding='utf-8').read() if os.path.isfile(cronq)
+                else "# Очередь еды в Cronometer\n\n> Наполняется обработчиком рефлексий (WP-40). Дренаж при Day Open: залогировать через /cronometer (log-food); если количество неясно «(кол-во?)» — уточнить у пилота.\n")
+    added = 0
+    for d in dishes:
+        if d not in existing:
+            existing = existing.rstrip() + f"\n- [ ] {d}  <!-- {date} -->"; added += 1
+    open(cronq, 'w', encoding='utf-8').write(existing.rstrip() + "\n")
+    print(f'  Cronometer: +{added} блюд(а) в очередь')
+PYEOF
+    rm -f "$FUND_TMPFILE"
 fi
 
 # 6. Сохранить полный транскрипт в fleeting-notes как контекст IWE
