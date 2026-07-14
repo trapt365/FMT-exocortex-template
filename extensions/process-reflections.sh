@@ -188,9 +188,20 @@ THOUGHTS_SECTION=$(echo "$CATEGORIZED" | sed -n '/^## Scratchpad/,$ { /^## Scrat
 # 5. Дописать в daily note
 if [ ! -f "$DAILY_NOTE" ]; then
     echo "WARN: Daily note не найден: $DAILY_NOTE"
-    echo "Создаю минимальный..."
     mkdir -p "$(dirname "$DAILY_NOTE")"
-    cat > "$DAILY_NOTE" << EOF
+    # Засев из шаблона Obsidian daily-note: иначе Obsidian не применит свой шаблон
+    # к уже созданному файлу → обрезанная заметка (пропадают Ретроспектива, Scratchpad и пр.)
+    TPL_REL=$(python3 -c "import json; print((json.load(open('$VAULT_DIR/.obsidian/daily-notes.json')).get('template') or '').strip())" 2>/dev/null)
+    TPL_PATH=""
+    if [ -n "$TPL_REL" ]; then
+        case "$TPL_REL" in *.md) TPL_PATH="$VAULT_DIR/$TPL_REL" ;; *) TPL_PATH="$VAULT_DIR/$TPL_REL.md" ;; esac
+    fi
+    if [ -n "$TPL_PATH" ] && [ -f "$TPL_PATH" ]; then
+        echo "Создаю из шаблона Obsidian: $TPL_PATH"
+        cp "$TPL_PATH" "$DAILY_NOTE"
+    else
+        echo "Шаблон не найден, создаю минимальный..."
+        cat > "$DAILY_NOTE" << EOF
 ---
 tags:
   - calendar
@@ -201,6 +212,7 @@ created: $(date -Iseconds)
 
 ### Scratchpad
 EOF
+    fi
 fi
 
 # Вставить в ### Хронометраж — с нормализацией, дедупликацией и сортировкой

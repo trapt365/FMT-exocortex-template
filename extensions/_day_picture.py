@@ -23,9 +23,11 @@ now_min   = now_local.hour * 60 + now_local.minute if now_local.date() == day_st
 TYPE_MAP = {"П": "Работа", "И": "Саморазвитие", "Л": "Отдых",
             "О": "Быт", "Д": "Движение", "ТО": "Быт"}
 APP_RU   = {"Code.exe": "VS Code", "chrome.exe": "браузер", "Obsidian.exe": "Obsidian",
-            "Telegram.exe": "Telegram", "SingularityApp.exe": "Singularity", "msedge.exe": "браузер"}
+            "Telegram.exe": "Telegram", "SingularityApp.exe": "Singularity", "msedge.exe": "браузер",
+            "pythonw.exe": "Anki"}
 APP_TYPE = {"Code.exe": "Работа", "Obsidian.exe": "Саморазвитие", "chrome.exe": "Отдых",
-            "msedge.exe": "Отдых", "Telegram.exe": "Отдых", "SingularityApp.exe": "Работа"}
+            "msedge.exe": "Отдых", "Telegram.exe": "Отдых", "SingularityApp.exe": "Работа",
+            "pythonw.exe": "Саморазвитие"}
 
 def to_min(dt): return dt.astimezone().hour * 60 + dt.astimezone().minute
 def hm(m):      return f"{m//60:02d}:{m%60:02d}"
@@ -48,7 +50,9 @@ def read_note_sections():
         c = open(NOTE, encoding="utf-8").read()
         m = re.search(r'###\s*Хронометраж\s*\n(.*?)(?=\n###|\n---|\Z)', c, re.DOTALL)
         for ln in (m.group(1) if m else "").splitlines():
-            mm = re.match(r'\s*(\d{1,2}):(\d{2})\s*[—\-]\s*(.+)', ln)
+            # терпим необязательный маркер списка «- »/«* » перед временем
+            # (сырой, ненормализованный хронометраж пишется с буллетами)
+            mm = re.match(r'\s*(?:[-*]\s+)?(\d{1,2}):(\d{2})\s*[—\-]\s*(.+)', ln)
             if mm:
                 t = int(mm.group(1))*60 + int(mm.group(2))
                 hron.append((t, mm.group(3).strip(), parse_marker(mm.group(3))))
@@ -110,114 +114,153 @@ def activitywatch():
     return win_events, afk
 
 # ---------- сборка ----------
-def norm_key(text):
-    t = re.sub(r'\(.*?\)', '', text.lower())
-    t = re.sub(r'продолжа\w*|дальше|ещё|начал[а]?|работаю над|работа над', '', t)
-    t = re.sub(r'[^\wа-яё ]', ' ', t)
-    return " ".join(w for w in t.split() if len(w) > 2)[:40]
+# Вариант 1: компьютер задаёт границы и длительность экранного времени,
+# хронометраж (голос) навешивает ярлыки. Офлайн-время — по голосу, но ограничено
+# моментом, когда снова появилась активность за компом.
+MIN_SPECKLE   = 4    # мин: сегменты короче — растворяются в более длинном соседе (антидребезг)
+SWITCH_MIN    = 12   # мин: молчаливое залипание в «отвлекающем» приложении длиннее — выносим отдельной строкой-догадкой
+LEISURE_APPS  = ("Telegram.exe",)  # приложения, где долгое залипание без реплики трактуем как отвлечение
+CAP_TAIL_MIN  = 120  # мин: последний офлайн-блок без сигналов компа не тянем дольше (не знаем, когда закончил)
+PHYSICAL_MARKERS = ("Д", "ТО")  # движение/спорт, уборка/техобслуживание — не за клавиатурой, даже если окно осталось открытым
 
 def build_rows():
     hron, scratch = read_note_sections()
     wt = wakatime_blocks()
     win_events, afk = activitywatch()
-    away = [(s, e) for s, e, act in afk if not act]
-    active = [(s, e) for s, e, act in afk if act]
-    def presence(s, e): return sum(max(0, min(ae, e) - max(a, s)) for a, ae in active)
 
-    def app_dom(s, e):
-        """доминирующее реально активное окно в [s,e] с порогом покрытия ≥40%"""
-        tot = {}
-        for ws, we, app in win_events:
-            ov = min(we, e) - max(ws, s)
-            if ov > 0: tot[app] = tot.get(app, 0) + ov
-        if not tot: return None
-        app = max(tot, key=tot.get)
-        return app if (tot[app] >= 0.4 * (e - s) and tot[app] >= 4) else None
-    def wt_cov(s, e): return sum(max(0, min(we, e) - max(ws, s)) for ws, we, p in wt)
-    def wt_proj(s, e):
-        ps = {}
-        for ws, we, p in wt:
-            ov = min(we, e) - max(ws, s)
-            if ov > 0: ps[p] = ps.get(p, 0) + ov
-        return max(ps, key=ps.get) if ps else None
+    if not (hron or win_events or wt):
+        return [], scratch
 
-    # backbone из хронометража
-    backbone = []
-    for i, (t, text, marker) in enumerate(hron):
-        end = hron[i+1][0] if i+1 < len(hron) else now_min
-        if end <= t: end = t + 1
-        key = norm_key(text)
-        cont = bool(re.match(r'\s*продолжа', text.lower()))
-        if backbone and (backbone[-1][3] == key or cont) and t - backbone[-1][1] <= 120:
-            backbone[-1][1] = end
-        else:
-            backbone.append([t, end, strip_marker(text), key, marker])
+    # поминутные слои за весь день [0, T1)
+    T1 = max(now_min, 1)
+    away = [False] * T1
+    appm = [None]  * T1
+    wtm  = [None]  * T1
+    for s, e, act in afk:
+        if act: continue
+        for m in range(max(0, int(s)), min(T1, int(e))): away[m] = True
+    cover = {}
+    for s, e, app in win_events:
+        a, b = max(0, s), min(T1, e); m = int(a)
+        while m < b:
+            ov = min(m + 1, b) - max(m, a)
+            if ov > 0: cover.setdefault(m, {}); cover[m][app] = cover[m].get(app, 0) + ov
+            m += 1
+    for m, d in cover.items():
+        if 0 <= m < T1: appm[m] = max(d, key=d.get)
+    for s, e, p in wt:
+        for m in range(max(0, int(s)), min(T1, int(e))): wtm[m] = p
+
+    # старт картины = первая реплика (голос = точка отсчёта дня);
+    # без реплик — первое реальное экранное действие. Ночной простой до этого отсекаем.
+    if hron:
+        T0 = max(0, min(hron[0][0], T1 - 1))
+    else:
+        T0 = next((m for m in range(T1) if not away[m] and (appm[m] or wtm[m])), None)
+        if T0 is None:
+            return [], scratch
+
+    def keym(m):
+        if away[m]:            return ("away",)
+        if appm[m] is not None: return ("app", appm[m])
+        if wtm[m]  is not None: return ("wt", wtm[m])
+        return ("off",)
+
+    # RLE минут в сегменты
+    keys = [keym(m) for m in range(T0, T1)]
+    segs, i = [], 0
+    while i < len(keys):
+        j = i
+        while j < len(keys) and keys[j] == keys[i]: j += 1
+        segs.append([T0 + i, T0 + j, keys[i]]); i = j
+
+    # антидребезг: короткий сегмент растворяется в более длинном соседе
+    changed = True
+    while changed and len(segs) > 1:
+        changed = False
+        for idx in range(len(segs)):
+            s, e, k = segs[idx]
+            if e - s >= MIN_SPECKLE: continue
+            left  = segs[idx-1] if idx > 0 else None
+            right = segs[idx+1] if idx+1 < len(segs) else None
+            if left and (not right or (left[1]-left[0]) >= (right[1]-right[0])):
+                left[1] = e
+            elif right:
+                right[0] = s
+            segs.pop(idx); changed = True; break
+    m2 = []
+    for s, e, k in segs:
+        if m2 and m2[-1][2] == k: m2[-1][1] = e
+        else: m2.append([s, e, k])
+    segs = m2
+
+    def hron_active(m):
+        best = None
+        for t, text, marker in hron:
+            if t <= m: best = (t, text, marker)
+            else: break
+        return best
+    def hron_in(s, e):
+        return [(t, text, marker) for t, text, marker in hron if s <= t < e]
 
     rows = []  # (s, e, label, type, source)
-    for s, e, text, key, marker in backbone:
-        is_comp = (marker in ("П", "И")) or (marker is None and presence(s, e) >= 0.4 * (e - s))
-        # сверка с ПК: вырезаем отлучки (afk ≥15м) из рабочих блоков → реальная длительность
-        segs = [(s, e, "comp" if is_comp else "off")]
-        if is_comp:
-            cuts = sorted((max(a, s), min(b, e)) for a, b in away if min(b, e) - max(a, s) >= 15)
-            if cuts:
-                segs, cur = [], s
-                for a, b in cuts:
-                    if a > cur: segs.append((cur, a, "comp"))
-                    segs.append((a, b, "away"))
-                    cur = b
-                if cur < e: segs.append((cur, e, "comp"))
-        for ss, ee, kind in segs:
-            if ee - ss < 1: continue
-            if kind == "away":
-                rows.append((ss, ee, "Отошёл от компьютера", "Быт", "ActivityWatch (afk)"))
-                continue
-            app = app_dom(ss, ee)
-            pres = presence(ss, ee) / max(1, ee - ss)
-            typ = TYPE_MAP.get(marker) or (APP_TYPE.get(app or "", "—") if app else "—")
-            comp = marker in ("П", "И") or (marker is None and pres >= 0.4)
-            if comp:
-                if app and pres >= 0.4:
-                    src = f"хронометраж + ПК ({APP_RU.get(app, app)})"
-                elif wt_cov(ss, ee) >= 0.5 * (ee - ss):
-                    src = f"хронометраж + WakaTime ({wt_proj(ss, ee)})"
+    for s, e, k in segs:
+        cuts = sorted(set([s, e] + [t for t, _, _ in hron_in(s, e)]))
+        for a, b in zip(cuts, cuts[1:]):
+            if b <= a: continue
+            ut = hron_active(a)
+            text   = strip_marker(ut[1]) if ut else None
+            marker = ut[2] if ut else None
+            own    = ut is not None and s <= ut[0] < e and ut[0] == a
+            kind   = k[0]
+            # окно оставлено открытым, но занятие физическое (зал, уборка) — не заявляем ПК
+            if kind in ("app", "wt") and text and marker in PHYSICAL_MARKERS:
+                rows.append((a, b, text, TYPE_MAP.get(marker, "Быт"), "хронометраж")); continue
+            if kind == "app":
+                app, app_ru = k[1], APP_RU.get(k[1], k[1])
+                leisure_drift = (k[1] in LEISURE_APPS) and not own and (b - a) >= SWITCH_MIN
+                if text and not leisure_drift:
+                    label = text
+                    typ   = TYPE_MAP.get(marker) or APP_TYPE.get(app, "—")
+                    src   = f"хронометраж + ПК ({app_ru})"
                 else:
-                    src = "хронометраж (ПК тихо)"
-            else:  # оффлайн-активность по хронометражу
-                src = (f"хронометраж · ПК активен ({APP_RU.get(app, app)})"
-                       if pres >= 0.6 and app else "хронометраж")
-            rows.append((ss, ee, text, typ, src))
+                    label = f"*{app_ru} (догадка)*"
+                    typ   = APP_TYPE.get(app, "—")
+                    src   = "ActivityWatch"
+            elif kind == "wt":
+                proj = k[1]
+                if text:
+                    label, typ, src = text, (TYPE_MAP.get(marker) or "—"), f"хронометраж + WakaTime ({proj})"
+                else:
+                    label, typ, src = f"*{proj} (догадка)*", "—", "WakaTime"
+            elif kind == "away":
+                if text and marker in ("Л", "О", "ТО", "Д"):
+                    label, typ, src = text, TYPE_MAP.get(marker, "Быт"), "хронометраж"
+                else:
+                    label, typ, src = "Отошёл от компьютера", "Быт", "ActivityWatch (afk)"
+            else:  # off — нет следов за компом
+                if text:
+                    label = text
+                    typ   = TYPE_MAP.get(marker) or "—"
+                    src   = "хронометраж (ПК тихо)" if marker in ("П", "И") else "хронометраж"
+                else:
+                    label, typ, src = "Вне компьютера — данных нет", "—", "—"
+            rows.append((a, b, label, typ, src))
 
-    # промежутки (лакуны) → догадки из активного окна / WakaTime, иначе «вне компа»
-    covered = [(r[0], r[1]) for r in rows]
-    def is_cov(a, b): return any(overlaps(a, b, s, e) for s, e in covered)
-    activity_start = hron[0][0] if hron else (min([b[0] for b in wt]) if wt else now_min)
-    m = (activity_start//30)*30
-    gaps = []
-    while m < now_min:
-        nxt = m + 30
-        if not is_cov(m, nxt): gaps.append((m, min(nxt, now_min)))
-        m = nxt
-    merged = []
-    for g in gaps:
-        if merged and g[0] - merged[-1][1] <= 0: merged[-1] = (merged[-1][0], g[1])
-        else: merged.append(list(g))
-    for s, e in merged:
-        app = app_dom(s, e)
-        if app:
-            rows.append((s, e, f"*{APP_RU.get(app, app)} (догадка)*", APP_TYPE.get(app, "—"), "ActivityWatch"))
-        elif wt_cov(s, e) >= 0.5 * (e - s):
-            rows.append((s, e, f"*{wt_proj(s, e)} (догадка)*", "—", "WakaTime"))
-        else:
-            rows.append((s, e, "Вне компьютера — данных нет", "—", "—"))
-
-    rows.sort()
+    # склейка соседних строк с одинаковым занятием+типом
     out = []
     for r in rows:
-        if out and out[-1][2] == r[2] and out[-1][3] == r[3] and r[0]-out[-1][1] <= 5:
+        if out and out[-1][2] == r[2] and out[-1][3] == r[3] and r[0] - out[-1][1] <= 2:
             out[-1] = (out[-1][0], r[1], r[2], r[3], r[4])
         else:
             out.append(list(r))
+
+    # потолок на последний офлайн-блок без сигналов компа — не тянем до полуночи
+    if out:
+        s, e, lbl, typ, src = out[-1]
+        offline = ("ПК" not in src) and ("WakaTime" not in src)
+        if offline and (e - s) > CAP_TAIL_MIN:
+            out[-1] = [s, s + CAP_TAIL_MIN, lbl, typ, src]
     return out, scratch
 
 def svyazka_fallback(rows):
@@ -255,9 +298,25 @@ def render(rows, svyazka):
     lines += ["", f"**Сделано в IWE:** [[Работа IWE {DATE}]] · {IWE}"]
     return "\n".join(lines)
 
+def seed_new_note(note_path):
+    """Засев НОВОЙ daily note: шаблон Obsidian daily-note, иначе минимальная заглушка.
+    Иначе cron создаёт голый файл до открытия Obsidian → шаблон не применяется → обрезанная заметка."""
+    stub = "---\ntags:\n  - calendar\n---\n"
+    vault = os.path.dirname(os.path.dirname(note_path))
+    try:
+        cfg = json.load(open(os.path.join(vault, ".obsidian", "daily-notes.json"), encoding="utf-8"))
+        rel = (cfg.get("template") or "").strip()
+        if rel:
+            tpl = os.path.join(vault, rel if rel.endswith(".md") else rel + ".md")
+            if os.path.isfile(tpl):
+                return open(tpl, encoding="utf-8").read()
+    except Exception:
+        pass
+    return stub
+
 def write_section(section):
     os.makedirs(os.path.dirname(NOTE), exist_ok=True)
-    c = open(NOTE, encoding="utf-8").read() if os.path.isfile(NOTE) else "---\ntags:\n  - calendar\n---\n"
+    c = open(NOTE, encoding="utf-8").read() if os.path.isfile(NOTE) else seed_new_note(NOTE)
     if "### Картина дня" in c:
         c = re.sub(r'###\s*Картина дня.*?(?=\n###|\n---\n|\Z)', section + "\n\n", c, count=1, flags=re.DOTALL)
     elif "### Хронометраж" in c:
