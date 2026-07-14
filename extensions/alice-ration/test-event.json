@@ -1,0 +1,6 @@
+{
+  "meta": {"locale": "ru-RU", "timezone": "Asia/Almaty"},
+  "request": {"command": "сколько осталось", "original_utterance": "сколько осталось", "type": "SimpleUtterance"},
+  "session": {"new": true, "session_id": "test-1", "message_id": 0, "user_id": "test"},
+  "version": "1.0"
+}
