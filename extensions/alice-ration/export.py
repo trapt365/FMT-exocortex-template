@@ -69,18 +69,28 @@ def load_remaining() -> dict | None:
 
 
 def git_push(paths: list[Path]) -> None:
+    """Best-effort: коммит только своих файлов; при расхождении с origin —
+    rebase c autostash и повтор. Не валит запуск (cron)."""
     rel = [str(p.relative_to(STRATEGY)) for p in paths if p.exists()]
-    subprocess.run(["git", "add", *rel], cwd=STRATEGY, check=True)
-    diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=STRATEGY)
-    if diff.returncode == 0:
-        print("Снимок не изменился — коммит не нужен.")
-        return
-    subprocess.run(
-        ["git", "commit", "-m", "chore(WP-41): снимок рациона для навыка Алисы"],
-        cwd=STRATEGY, check=True,
-    )
-    subprocess.run(["git", "push"], cwd=STRATEGY, check=True)
-    print("Снимок закоммичен и отправлен.")
+    try:
+        subprocess.run(["git", "add", "--", *rel], cwd=STRATEGY, check=True)
+        diff = subprocess.run(["git", "diff", "--cached", "--quiet", "--", *rel], cwd=STRATEGY)
+        if diff.returncode == 0:
+            print("Снимок не изменился — коммит не нужен.")
+            return
+        subprocess.run(
+            ["git", "commit", "-m", "chore(WP-41): снимок рациона для навыка Алисы", "--", *rel],
+            cwd=STRATEGY, check=True,
+        )
+        if subprocess.run(["git", "push"], cwd=STRATEGY).returncode != 0:
+            subprocess.run(
+                ["git", "pull", "--rebase", "--autostash", "origin", "master"],
+                cwd=STRATEGY, check=True,
+            )
+            subprocess.run(["git", "push"], cwd=STRATEGY, check=True)
+        print("Снимок закоммичен и отправлен.")
+    except subprocess.CalledProcessError as e:
+        print(f"ВНИМАНИЕ: снимок для Алисы не отправлен ({e}); данные останутся прежними до следующего запуска.")
 
 
 def main() -> int:
